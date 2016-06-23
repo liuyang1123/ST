@@ -1,0 +1,10 @@
+Django
+django-cors-headers
+django-rest-swagger
+djangorestframework
+djangorestframework-jwt
+PyJWT
+PyYAML
+wheel
+psycopg2
+requests

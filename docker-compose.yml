@@ -1,0 +1,68 @@
+postgres:
+  restart: always
+  image: postgres
+usweb:
+  restart: always
+  build: ./userservice
+  command: bash ./userservice/run_us.sh
+  volumes:
+    - .:/code
+  ports:
+    - "8000:8000"
+  links:
+    - postgres
+rethinkdb:
+  restart: always
+  image: rethinkdb
+  ports:
+    - "8080:8080"
+    - "28015:28015"
+    - "29015:29015"
+csweb:
+  restart: always
+  build: ./calendarservice
+  command: bash ./calendarservice/run_cs.sh
+  volumes:
+    - .:/code
+  ports:
+    - "8001:8001"
+  links:
+    - rethinkdb
+    - usweb
+#redis:
+#  restart: always
+#  image: redis
+#rabbitmq:
+#  restart: always
+#  image: rabbitmq
+#  environment:
+#    - RABBITMQ_PASS=mypass
+#  ports:
+#    - "5672:5672"
+#    - "15672:15672"
+mspostgres:
+  restart: always
+  image: postgres
+msweb:
+  restart: always
+  build: ./msservice
+  command: bash ./msservice/run_ms.sh
+  volumes:
+    - .:/app
+  ports:
+    - "9000:9000"
+  links:
+    - mspostgres:mspostgres
+    - rethinkdb
+#    - rabbitmq:rabbit
+#    - redis:redis
+#worker:
+#  restart: always
+#  build: ./msservice
+#  command: bash ./msservice/run_celery.sh
+#  volumes:
+#    - .:/app
+#  links:
+#    - mspostgres:mspostgres
+#    - rabbitmq:rabbit
+#    - redis:redis

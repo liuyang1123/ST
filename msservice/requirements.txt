@@ -1,0 +1,14 @@
+Django
+django-cors-headers
+django-rest-swagger
+djangorestframework
+djangorestframework-jwt
+python-dateutil
+PyJWT
+PyYAML
+wheel
+celery
+redis
+requests
+psycopg2
+rethinkdb
