@@ -105,7 +105,6 @@ class EventsViewSet(viewsets.ViewSet):
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-
     def create(self, request, calendar_id):
         # self.kwargs['calendar_id']
         decoded_token = decode_token(request.META)
@@ -300,8 +299,10 @@ class QViewSet(viewsets.ViewSet):
             return Response({"message": "Not found."},
                             status=status.HTTP_404_NOT_FOUND)
 
-        from_date = request.data.get('from_date', (now() - timedelta(days=14)).isoformat())
-        to_date = request.data.get('to_date', (now() + timedelta(days=14)).isoformat())
+        from_date = request.data.get('from_date',
+                                     (now() - timedelta(days=14)).isoformat())
+        to_date = request.data.get('to_date',
+                                   (now() + timedelta(days=14)).isoformat())
 
         event = Event()
         serializer = EventSerializer(
@@ -316,8 +317,10 @@ class QViewSet(viewsets.ViewSet):
             return Response({"message": "Not found."},
                             status=status.HTTP_404_NOT_FOUND)
 
-        from_date = request.data.get('from_date', (now() - timedelta(hours=3)).isoformat())
-        to_date = request.data.get('to_date', (now() - timedelta(hours=3)).isoformat())
+        from_date = request.data.get('from_date',
+                                     (now() - timedelta(hours=3)).isoformat())
+        to_date = request.data.get('to_date',
+                                   (now() - timedelta(hours=3)).isoformat())
 
         if from_date is None or to_date is None:
             return Response({
@@ -333,6 +336,12 @@ class QViewSet(viewsets.ViewSet):
 
 # Routers provide an easy way of automatically determining the URL conf.
 router = routers.DefaultRouter()
-router.register(r'c/(?P<client_id>\S+)/u/(?P<user_id>\S+)/events', QViewSet, base_name='eclient')
+router.register(
+    r'c/(?P<client_id>\S+)/u/(?P<user_id>\S+)/events',
+    QViewSet,
+    base_name='eclient')
 router.register(r'calendars', CalendarViewSet, base_name='calendars')
-router.register(r'(?P<calendar_id>\S+)/events', EventsViewSet, base_name='events')
+router.register(
+    r'(?P<calendar_id>\S+)/events',
+    EventsViewSet,
+    base_name='events')

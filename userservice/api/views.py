@@ -4,10 +4,12 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.decorators import list_route
 from rest_framework_jwt.settings import api_settings
-from api.models import MyUser, Profile, Application, ApplicationUser#, AppAuthorization
-from api.serializers import UserSerializer, ProfileSerializer, ApplicationSerializer, ApplicationUserSerializer#, AppAuthorizationSerializer
+from api.models import MyUser, Profile, Application, ApplicationUser  # , AppAuthorization
+# , AppAuthorizationSerializer
+from api.serializers import UserSerializer, ProfileSerializer, ApplicationSerializer, ApplicationUserSerializer
 from api.utils import decode_token
 from api.permissions import IsAuthenticated, UserViewSetPermissions, ProfileViewSetPermissions
+
 
 class RegistrationView(views.APIView):
     """
@@ -45,18 +47,23 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         """
         decoded_token = decode_token(self.request.META)
         if decoded_token is not None:
-            return Application.objects.filter(owner=MyUser.objects.get(email=decoded_token['email']))
+            return Application.objects.filter(
+                owner=MyUser.objects.get(email=decoded_token['email']))
         return []
 
     def perform_update(self, serializer):
         decoded_token = decode_token(self.request.META)
         if decoded_token is not None:
-            serializer.save(owner=MyUser.objects.get(email=decoded_token['email']))
+            serializer.save(
+                owner=MyUser.objects.get(
+                    email=decoded_token['email']))
 
     def perform_create(self, serializer):
         decoded_token = decode_token(self.request.META)
         if decoded_token is not None:
-            serializer.save(owner=MyUser.objects.get(email=decoded_token['email']))
+            serializer.save(
+                owner=MyUser.objects.get(
+                    email=decoded_token['email']))
 
 
 class AllUsersView(views.APIView):
@@ -68,18 +75,22 @@ class AllUsersView(views.APIView):
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+
 class UserView(views.APIView):
 
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):
         decoded_token = decode_token(request.META)
-        serializer = UserSerializer(MyUser.objects.get(email=decoded_token['email']))
+        serializer = UserSerializer(
+            MyUser.objects.get(
+                email=decoded_token['email']))
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request):
-        # Si cambia el email puede generar problemas serios, por eso se retorna un nuevo token
+        # Si cambia el email puede generar problemas serios, por eso se retorna
+        # un nuevo token
         decoded_token = decode_token(request.META)
         serializer = UserSerializer(
             MyUser.objects.get(email=decoded_token['email']),
@@ -115,7 +126,9 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         client_id = self.kwargs['client_id']
-        users = ApplicationUser.objects.filter(application__client_id = client_id).values_list('user', flat=True)
+        users = ApplicationUser.objects.filter(
+            application__client_id=client_id).values_list(
+            'user', flat=True)
         return MyUser.objects.filter(pk__in=users)
 
     def filter_queryset(self, queryset):
@@ -163,23 +176,30 @@ class UserViewSet(viewsets.ModelViewSet):
     def get_user_by_email(self, request, *args, **kwargs):
         email = request.data['email']
 
-        app_user = ApplicationUser.objects.filter(application__client_id=self.kwargs['client_id'], user__email=email)
+        app_user = ApplicationUser.objects.filter(
+            application__client_id=self.kwargs['client_id'], user__email=email)
 
         if app_user.exists():
-            return Response({"user_id": app_user[0].user.id}, status=status.HTTP_200_OK)
+            return Response(
+                {"user_id": app_user[0].user.id}, status=status.HTTP_200_OK)
         else:
-            return Response({'message': 'User does not exists.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': 'User does not exists.'},
+                            status=status.HTTP_400_BAD_REQUEST)
 
 
 class ProfileViewSet(viewsets.ModelViewSet):
 
     serializer_class = ProfileSerializer
-    permission_classes = (ProfileViewSetPermissions,) # TODO Edit: OwnerPermission
+    permission_classes = (
+        ProfileViewSetPermissions,
+    )  # TODO Edit: OwnerPermission
     lookup_field = 'profile_id'
 
     def get_queryset(self):
         client_id = self.kwargs['client_id']
-        users = ApplicationUser.objects.filter(application__client_id = client_id).values_list('user', flat=True)
+        users = ApplicationUser.objects.filter(
+            application__client_id=client_id).values_list(
+            'user', flat=True)
         return Profile.objects.filter(user__in=users)
 
     def filter_queryset(self, queryset):
@@ -203,9 +223,12 @@ class ProfileViewSet(viewsets.ModelViewSet):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         decoded_token = decode_token(request.META)
-        instance = Profile.objects.get(user=MyUser.objects.get(email=decoded_token['email']))
+        instance = Profile.objects.get(
+            user=MyUser.objects.get(
+                email=decoded_token['email']))
         partial = kwargs.pop('partial', False)
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer = self.get_serializer(
+            instance, data=request.data, partial=partial)
         if serializer.is_valid():
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -227,6 +250,9 @@ class ProfileViewSet(viewsets.ModelViewSet):
 # Routers provide an easy way of automatically determining the URL conf.
 router = routers.DefaultRouter()
 router.register(r'(?P<client_id>\S+)/users', UserViewSet, base_name='users')
-router.register(r'(?P<client_id>\S+)/profiles', ProfileViewSet, base_name='profiles')
+router.register(
+    r'(?P<client_id>\S+)/profiles',
+    ProfileViewSet,
+    base_name='profiles')
 router.register(r'applications', ApplicationViewSet, base_name='applications')
 # router.register(r'apps', AppAuthorizationViewSet)

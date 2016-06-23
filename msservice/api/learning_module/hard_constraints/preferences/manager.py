@@ -7,7 +7,7 @@ USER_PREFERENCES = ["BookableHoursPreference", "DoNotDisturbPreference",
                     "MaxDistancePreference", "ModeOfCommunicationPreference"]
 
 # RETHINKDB SETTINGS
-RDB_HOST = "rethinkdb"
+RDB_HOST = "127.0.0.1"
 RDB_PORT = 28015
 USER_PREFERENCES_DB = "user_preferences"
 USER_PREFERENCES_TABLE = "user_preferences"
@@ -31,18 +31,24 @@ class UserPreferencesManager:
     def close(self):
         self.connection.close()
 
-    def list(self):
-        selection = list(self.USER_PREFERENCES_TABLE.run(self.connection))
+    def list(self, user_id):
+        selection = list(self.USER_PREFERENCES_TABLE.filter(
+            {"user_id": user_id}).run(self.connection))
 
         return selection
 
-    def get(self, user_id):
+    def get(self, user_id, pk):
+        return list(self.USER_PREFERENCES_TABLE.filter({
+            "id": pk, "user_id": user_id
+        }).run(self.connection))
+
+    def get_all(self, user_id):
         selection = list(self.USER_PREFERENCES_TABLE.filter(
             {"user_id": user_id}).run(self.connection))
         return selection
 
     def get_list_objects(self, user_id):
-        objs = self.get(user_id)
+        objs = self.get_all(user_id)
         event_type_obj = EventType(event_type,
                                    obj["is_live"],
                                    obj["unique_per_day"])
@@ -70,15 +76,16 @@ class UserPreferencesManager:
             document).run(self.connection)
         return inserted
 
-    def delete(self, pk):
-        deleted = self.USER_PREFERENCES_TABLE.get(
-            pk).delete().run(self.connection)
+    def delete(self, user_id, pk):
+        deleted = self.USER_PREFERENCES_TABLE.filter({
+            "id": pk, "user_id": user_id
+        }).delete().run(self.connection)
         return deleted
 
-    def delete_all(self):
-        deleted = self.USER_PREFERENCES_TABLE.delete().run(self.connection)
-        return deleted
-
+    def delete_all(self, user_id):
+        return self.USER_PREFERENCES_TABLE.filter({
+            "user_id": user_id
+        }).delete().run(self.connection)
 
 DEFAULT_USER_PREFERENCES = [
     {

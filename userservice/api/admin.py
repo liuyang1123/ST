@@ -4,14 +4,16 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 
-from api.models import MyUser, Profile, Application, ApplicationUser#, AppAuthorization
+from api.models import MyUser, Profile, Application, ApplicationUser  # , AppAuthorization
 
 
 class UserCreationForm(forms.ModelForm):
     """A form for creating new users. Includes all the required
     fields, plus a repeated password."""
     password1 = forms.CharField(label='Password', widget=forms.PasswordInput)
-    password2 = forms.CharField(label='Password confirmation', widget=forms.PasswordInput)
+    password2 = forms.CharField(
+        label='Password confirmation',
+        widget=forms.PasswordInput)
 
     class Meta:
         model = MyUser
@@ -66,7 +68,8 @@ class UserAdmin(BaseUserAdmin):
     list_filter = ('is_admin',)
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
-        ('Personal info', {'fields': ('first_name','last_name','default_tzid')}),
+        ('Personal info', {
+         'fields': ('first_name', 'last_name', 'default_tzid')}),
         ('Permissions', {'fields': ('is_admin',)}),
     )
     # add_fieldsets is not a standard ModelAdmin attribute. UserAdmin
@@ -75,7 +78,7 @@ class UserAdmin(BaseUserAdmin):
         (None, {
             'classes': ('wide',),
             'fields': ('email', 'first_name', 'last_name', 'default_tzid', 'password1', 'password2')}
-        ),
+         ),
     )
     search_fields = ('email',)
     ordering = ('email',)

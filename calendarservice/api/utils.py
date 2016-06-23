@@ -2,6 +2,7 @@ import requests
 from rest_framework_jwt.settings import api_settings
 from calendarservice import settings
 
+
 def verify_token(token):
     try:
         request = requests.post(settings.USER_SERVICE_TOKEN_VERIFICATION_URL,
@@ -20,8 +21,8 @@ def decode_token(data):
     if token is None:
         return None
 
-    token = token.split(' ') # [JWT,XXXX] or [Token,XXXX]
-    if len(token) > 1: # If not: token = ['XXXX']
+    token = token.split(' ')  # [JWT,XXXX] or [Token,XXXX]
+    if len(token) > 1:  # If not: token = ['XXXX']
         token = token[1]
     else:
         token = token[0]

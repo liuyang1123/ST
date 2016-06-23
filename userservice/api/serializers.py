@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from api.models import MyUser, Profile, Application, ApplicationUser #, AppAuthorization
+from api.models import MyUser, Profile, Application, ApplicationUser  # , AppAuthorization
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -36,9 +36,12 @@ class UserSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         instance.email = validated_data.get('email', instance.email)
-        instance.first_name = validated_data.get('first_name', instance.first_name)
-        instance.last_name = validated_data.get('last_name', instance.last_name)
-        instance.default_tzid = validated_data.get('default_tzid', instance.default_tzid)
+        instance.first_name = validated_data.get(
+            'first_name', instance.first_name)
+        instance.last_name = validated_data.get(
+            'last_name', instance.last_name)
+        instance.default_tzid = validated_data.get(
+            'default_tzid', instance.default_tzid)
 
         instance.save()
 

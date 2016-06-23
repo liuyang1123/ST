@@ -1,4 +1,4 @@
-ANY = None
+ANY = ""
 USER = "user"
 START_TIME = "start_time"
 END_TIME = "end_time"
@@ -27,7 +27,7 @@ class Preference:
         Calculates the cosine / distance between the event value and the
         preferred value.
         """
-        if self.event_type == ANY or self.event_type == event.event_type:
+        if self.event_type == ANY or self.event_type == str(event.event_type):
             return self._calculate_confidence_score(event)
         return 0
 

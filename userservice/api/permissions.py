@@ -1,6 +1,7 @@
 from rest_framework.permissions import BasePermission
 from api.utils import decode_token
 
+
 class IsAuthenticated(BasePermission):
     """
     Allows access only to authenticated users.
@@ -13,6 +14,7 @@ class IsAuthenticated(BasePermission):
         return True
 
 SAFE_METHODS = ['POST']
+
 
 class UserViewSetPermissions(BasePermission):
     """
@@ -34,6 +36,7 @@ class UserViewSetPermissions(BasePermission):
         if token is None:
             return False
         return True
+
 
 class ProfileViewSetPermissions(BasePermission):
     """

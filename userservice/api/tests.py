@@ -8,7 +8,8 @@ from api.models import MyUser, Profile
 class TokenAuthTestCase(TestCase):
 
     def setUp(self):
-        self.user = MyUser.objects.create_user(email="joe@gmail.com", password="test")
+        self.user = MyUser.objects.create_user(
+            email="joe@gmail.com", password="test")
         self.c = Client()
 
     def test_get_token(self):
@@ -17,15 +18,17 @@ class TokenAuthTestCase(TestCase):
             "/api/v1/api-token-auth/", {"email": "joe@gmail.com", "password": "test"})
 
         assert 200 == response.status_code, "Response is 200 OK"
-        assert json.loads(response.content.decode('utf-8')).get("token", False) is not False, "Token is set"
+        assert json.loads(response.content.decode('utf-8')
+                          ).get("token", False) is not False, "Token is set"
 
 
 class ModelsTestCase(TestCase):
 
     def test_new_user_signals(self):
 
-        user = MyUser.objects.create_user(email="joe@gmail.com", password="test")
-        
+        user = MyUser.objects.create_user(
+            email="joe@gmail.com", password="test")
+
         assert Profile.objects.filter(
             user=user).count() == 1, "Exactly 1 matching profile is created"
 
@@ -34,7 +37,8 @@ class EndpointAuthenticationTestCase(TestCase):
 
     def setUp(self):
         self.c = Client()
-        self.user = MyUser.objects.create_user(email="joe@gmail.com", password="test")
+        self.user = MyUser.objects.create_user(
+            email="joe@gmail.com", password="test")
 
     def test_endpoints_require_token_auth(self):
         url = reverse('myuser-me')

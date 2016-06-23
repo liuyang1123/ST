@@ -124,6 +124,25 @@ class BNTrainingView(viewsets.ViewSet):
 class PreferenceViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
 
+    def create(self, request):
+        decoded_token = decode_token(request.META)
+
+        serializer = PreferenceSerializer(data=request.data)
+        if serializer.is_valid():
+            preference_manager = UserPreferencesManager()
+
+            data = serializer.data
+            data['user_id'] = decoded_token['user_id']
+            data['attributes'] = json.loads(data['attributes'])
+
+            inserted = preference_manager.insert(data)
+            preference_manager.close()
+
+            return Response({"message": "Preference created.",
+                             "data": inserted}, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     def list(self, request):
         decoded_token = decode_token(request.META)
 
@@ -135,41 +154,15 @@ class PreferenceViewSet(viewsets.ViewSet):
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def create(self, request):
-        decoded_token = decode_token(request.META)
-
-        serializer = PreferenceSerializer(data=request.data)
-        if serializer.is_valid():
-            preference_manager = UserPreferencesManager()
-
-            data = serializer.data
-            data['user_id'] = decoded_token['user_id']
-
-            inserted = preference_manager.insert(data)
-            preference_manager.close()
-
-            return Response({"message": "Preference created.",
-                             "data": inserted}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors)
-
-    def get_preference(self, user_id, pk):
-        preference_manager = UserPreferencesManager()
-        serializer = PreferenceSerializer(
-            preference_manager.get(user_id, pk),
-            many=True)
-        preference_manager.close()
-
-        return serializer.data
-
-    def retrieve(self, request, pk=None):
-        if pk is None:
-            return Response({
-                'message': 'Provide the object id.'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        decoded_token = decode_token(request.META)
-        return Response(self.get_preference(
-            decoded_token['user_id'], pk), status=status.HTTP_200_OK)
+    # def retrieve(self, request, pk=None):
+    #     if pk is None:
+    #         return Response({
+    #             'message': 'Provide the object id.'
+    #         }, status=status.HTTP_400_BAD_REQUEST)
+    #
+    #     decoded_token = decode_token(request.META)
+    #     return Response(self.get_preference(
+    #         decoded_token['user_id'], pk), status=status.HTTP_200_OK)
 
     def update(self, request, pk=None):
         if pk is None:
@@ -180,6 +173,7 @@ class PreferenceViewSet(viewsets.ViewSet):
         decoded_token = decode_token(request.META)
 
         preference_manager = UserPreferencesManager()
+        # TODO Catch if not exists
         serializer = PreferenceSerializer(
             instance=preference_manager.get(decoded_token['user_id'], pk)[0],
             data=request.data,
@@ -190,17 +184,14 @@ class PreferenceViewSet(viewsets.ViewSet):
             data['user_id'] = decoded_token['user_id']
             data['preference_name'] = serializer.validated_data.get(
                 'preference_name', data['preference_name'])
+            data['preference_type'] = serializer.validated_data.get(
+                'preference_type', data['preference_type'])
             data['event_type'] = serializer.validated_data.get(
                 'event_type', data['event_type'])
-            data['attributes'] = serializer.validated_data.get(
-                'attributes', data['attributes'])
+            data['attributes'] = json.loads(serializer.validated_data.get(
+                'attributes', data['attributes']))
 
-            # return Response({"data": data, "old_data":
-            # preference_manager.get(decoded_token['user_id'], pk)[0]},
-            # status=status.HTTP_200_OK)
-
-            updated = preference_manager.update(
-                decoded_token['user_id'], pk, data)
+            updated = preference_manager.update(pk, data)
             preference_manager.close()
 
             return Response({"data": updated}, status=status.HTTP_200_OK)
@@ -208,9 +199,6 @@ class PreferenceViewSet(viewsets.ViewSet):
         preference_manager.close()
 
         return Response(serializer.errors)
-
-    def partial_update(self, request, pk=None):
-        return self.update(self, request, pk)
 
     def destroy(self, request, pk=None):
         if pk is None:
@@ -238,8 +226,8 @@ class PreferenceViewSet(viewsets.ViewSet):
         #     preference_manager.insert(data)
         preference_manager.close()
 
-        return Response(
-            {"data": "All the preferences has been created"}, status=status.HTTP_201_CREATED)
+        return Response({"data": "All the preferences has been created"},
+                        status=status.HTTP_201_CREATED)
 
 
 # Routers provide an easy way of automatically determining the URL conf.
@@ -247,7 +235,7 @@ router = routers.DefaultRouter()
 router.register(r'scheduling', ScheduleViewSet, base_name='scheduling')
 router.register(r'bayesiannetwork', BNTrainingView,
                 base_name='bayesiannetwork')
-# router.register(r'preferences', PreferenceViewSet, base_name='preferences')
+router.register(r'preferences', PreferenceViewSet, base_name='preferences')
 # ModelViewSet:
 # router.register(r'scheduling-feed', SchedulingTasksViewSet,
 #                 base_name='scheduling_feed')

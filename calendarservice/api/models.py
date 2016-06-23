@@ -4,7 +4,12 @@ from rethinkdb.errors import RqlRuntimeError
 # CHOICES
 UNKNOWN = "unknown"
 PROVIDERS = ["apple", "exchange", "google", "live_connect", "office365"]
-PARTICIPATION_STATUS = [UNKNOWN, "needs_action", "accepted", "declined", "tentative"]
+PARTICIPATION_STATUS = [
+    UNKNOWN,
+    "needs_action",
+    "accepted",
+    "declined",
+    "tentative"]
 TRANSPARENCY = [UNKNOWN, "opaque", "transparent"]
 EVENT_STATUS = [UNKNOWN, "tentative", "confirmed", "cancelled"]
 
@@ -14,6 +19,7 @@ RDB_PORT = 28015
 CALENDAR_DB = "calendarapi"
 CALENDAR_TABLE = "calendars"
 EVENT_TABLE = "events"
+
 
 def run_setup():
     connection = r.connect(host=RDB_HOST, port=RDB_PORT)
@@ -31,6 +37,7 @@ def run_setup():
         pass
     finally:
         connection.close()
+
 
 class Calendar:
     """
@@ -63,15 +70,16 @@ class Calendar:
 
     def get(self, user_id, pk):
         selection = list(self.calendar_table.filter({"id": pk,
-                "user_id": user_id}
-            ).run(self.connection))
+                                                     "user_id": user_id}
+                                                    ).run(self.connection))
 
         return selection
 
     def update(self, user_id, pk, document):
         element = self.calendar_table.get(pk).run(self.connection)
         if element['user_id'] == user_id:
-            updated = self.calendar_table.get(pk).update(document).run(self.connection)
+            updated = self.calendar_table.get(
+                pk).update(document).run(self.connection)
             return updated
         return None
 
@@ -151,7 +159,7 @@ class Event:
     def get_event(self, user_id, calendar_id, event_id):
         selection = list(self.event_table.filter({
             "user_id": user_id, "id": event_id, "calendar_id": calendar_id}
-            ).run(self.connection))
+        ).run(self.connection))
 
         return selection
 
@@ -163,12 +171,14 @@ class Event:
     def update_event(self, calendar_id, pk, document):
         element = self.event_table.get(pk).run(self.connection)
         if element['calendar_id'] == calendar_id:
-            updated = self.event_table.get(pk).update(document).run(self.connection)
+            updated = self.event_table.get(pk).update(
+                document).run(self.connection)
             return updated
         return None
 
     def update_event_with_pk(self, pk, document):
-        updated = self.event_table.get(pk).update(document).run(self.connection)
+        updated = self.event_table.get(pk).update(
+            document).run(self.connection)
         return updated
 
     def insert_event(self, document):
@@ -203,7 +213,7 @@ class Event:
         return selection
 
     def free_busy(self, user_id, from_date, to_date):
-        dtz = '+00:00' # Default Timezone
+        dtz = '+00:00'  # Default Timezone
 
         selection = list(self.event_table.filter({"user_id": user_id}).filter(
             r.iso8601(r.row['start'],

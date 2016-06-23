@@ -101,18 +101,18 @@ DATABASES = {
 # https://docs.djangoproject.com/en/1.9/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
-#    {
-#        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-#    },
-#    {
-#        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-#    },
-#    {
-#        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-#    },
-#    {
-#        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-#    },
+    #    {
+    #        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    #    },
+    #    {
+    #        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    #    },
+    #    {
+    #        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    #    },
+    #    {
+    #        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    #    },
 ]
 
 
@@ -153,7 +153,7 @@ REST_FRAMEWORK = {
 }
 
 JWT_AUTH = {
-	'JWT_ALLOW_REFRESH': True,
+    'JWT_ALLOW_REFRESH': True,
     'JWT_EXPIRATION_DELTA': datetime.timedelta(days=5),
 }
 
@@ -162,11 +162,11 @@ SWAGGER_SETTINGS = {
     #'api_path': '/api/v1/',
     'is_authenticated': False,
     'info': {
-        'contact': '',#'admin@taetan.com',
+        'contact': '',  # 'admin@taetan.com',
         'description': 'A microservice for handling user information and authentication.',
         'license': 'MIT',
         'title': 'User Service',
-        'termsOfServiceUrl': '', #TODO
+        'termsOfServiceUrl': '',  # TODO
     },
     'doc_expansion': 'none',
 }

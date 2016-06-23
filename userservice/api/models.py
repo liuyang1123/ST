@@ -5,7 +5,9 @@ from django.dispatch import receiver
 from django.utils import timezone
 import uuid
 
+
 class MyUserManager(BaseUserManager):
+
     def create_user(self, email, password=None, **kwargs):
         """
         Creates and saves a User with the given email, date of
@@ -14,11 +16,11 @@ class MyUserManager(BaseUserManager):
         if not email:
             raise ValueError('Users must have an email address')
         if password is None:
-            password = 'f1a28a8a-8308-4c03-aef8-d07a61136807' # Secret Key
+            password = 'f1a28a8a-8308-4c03-aef8-d07a61136807'  # Secret Key
 
         user = self.model(
             email=self.normalize_email(email),
-			first_name=kwargs.get('first_name', ""),
+            first_name=kwargs.get('first_name', ""),
             last_name=kwargs.get('last_name', "")
         )
 
@@ -32,10 +34,10 @@ class MyUserManager(BaseUserManager):
         birth and password.
         """
         user = self.create_user(email,
-            password=password,
-			first_name=kwargs.get('first_name', ""),
-            last_name=kwargs.get('last_name', "")
-        )
+                                password=password,
+                                first_name=kwargs.get('first_name', ""),
+                                last_name=kwargs.get('last_name', "")
+                                )
         user.is_admin = True
         user.save(using=self._db)
         return user
@@ -51,7 +53,8 @@ class MyUser(AbstractBaseUser):
     first_name = models.CharField(max_length=40, blank=True)
     last_name = models.CharField(max_length=40, blank=True)
 
-    default_tzid = models.CharField(max_length=50) # ex. Europe/London - http://www.iana.org/time-zones
+    # ex. Europe/London - http://www.iana.org/time-zones
+    default_tzid = models.CharField(max_length=50)
 
     date_joined = models.DateTimeField(default=timezone.now)
 
@@ -98,7 +101,10 @@ class Profile(models.Model):
     """
 
     user = models.OneToOneField(MyUser)
-    profile_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    profile_id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False)
     contact_number = models.CharField(max_length=20)
     status_message = models.CharField(
         max_length=144, help_text='Twitter style status message', blank=True, null=True)
@@ -117,7 +123,8 @@ class Profile(models.Model):
 #     key = models.CharField(max_length=200, blank=True, null=True,
 #                            help_text='Optional, typically your API_KEY value')
 #     token = models.CharField(
-#         max_length=200, blank=True, null=True, help_text='Optional, this is your token or secret')
+# max_length=200, blank=True, null=True, help_text='Optional, this is your
+# token or secret')
 
 
 @receiver(post_save, sender=MyUser)
@@ -169,4 +176,6 @@ class Application(models.Model):
 class ApplicationUser(models.Model):
     application = models.ForeignKey(Application)
     user = models.ForeignKey(MyUser)
-    scope = models.TextField(null=True) # read_account list_calendars read_events create_event delete_event read_free_busy
+    # read_account list_calendars read_events create_event delete_event
+    # read_free_busy
+    scope = models.TextField(null=True)
