@@ -1,10 +1,8 @@
 import rethinkdb as r
 from rethinkdb.errors import RqlRuntimeError
+from msservice.settings import RDB_HOST, RDB_PORT
 
 # RETHINKDB SETTINGS
-RDB_HOST = "127.0.0.1"
-# RDB_HOST = "rethinkdb"
-RDB_PORT = 28015
 SOFT_CONSTRAINTS_DB = "soft_constraints"
 SOFT_CONSTRAINTS_TABLE = "soft_constraints"
 

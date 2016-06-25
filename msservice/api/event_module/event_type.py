@@ -1,7 +1,3 @@
-types_opt = ['breakfast', 'lunch', 'dinner',
-             'hangout', 'call', 'meeting']
-
-
 class EventType:
 
     def __init__(self, name, is_live, unique_per_day):

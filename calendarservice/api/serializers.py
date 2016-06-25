@@ -42,7 +42,7 @@ class EventSerializer(serializers.Serializer):
         allow_blank=True,
         default="")  # Can be blank = To be determined
     # start - end or a specific duration when start y end are null
-    duration = serializers.IntegerField(allow_null=True, required=False)
+    duration = serializers.IntegerField(allow_null=True, default=-1)
     location = serializers.CharField(
         max_length=140, allow_blank=True, default="")
     participation_status = serializers.CharField(

@@ -12,6 +12,17 @@ class Event(object):
         self.importance = None  # Calculate lambda
         self.mode_of_communication = None
 
+    def __init__(self, event):
+        self.participants = event.participants
+        self.event_type = event.event_type
+        self.description = event.description
+        self.duration = event.duration
+        self.start_time = event.start_time
+        self.end_time = event.end_time
+        self.location = event.location
+        self.importance = None  # Calculate lambda
+        self.mode_of_communication = None
+
     def set_mode_of_communication(self, mode_of_communication):
         self.mode_of_communication = mode_of_communication
 

@@ -1,14 +1,22 @@
 import rethinkdb as r
+import ast
+import json
+from msservice.settings import RDB_HOST, RDB_PORT
 from rethinkdb.errors import RqlRuntimeError
 from api.learning_module.hard_constraints.preferences import preference
+from api.event_module.manager import EVENT_TYPES_DICT, DEFAULT_EVENT_TYPE
+from api.event_module.event_type import EventType
 
-USER_PREFERENCES = ["BookableHoursPreference", "DoNotDisturbPreference",
-                    "DurationPreference", "TimeBetweenPreference",
-                    "MaxDistancePreference", "ModeOfCommunicationPreference"]
+USER_PREFERENCES = {
+    "BookableHoursPreference": preference.BookableHoursPreference,
+    "DoNotDisturbPreference": preference.DoNotDisturbPreference,
+    "DurationPreference": preference.DurationPreference,
+    "TimeBetweenPreference": preference.TimeBetweenPreference,
+    "MaxDistancePreference": preference.MaxDistancePreference,
+    "ModeOfCommunicationPreference": preference.ModeOfCommunicationPreference
+}
 
 # RETHINKDB SETTINGS
-RDB_HOST = "127.0.0.1"
-RDB_PORT = 28015
 USER_PREFERENCES_DB = "user_preferences"
 USER_PREFERENCES_TABLE = "user_preferences"
 
@@ -48,21 +56,17 @@ class UserPreferencesManager:
         return selection
 
     def get_list_objects(self, user_id):
-        objs = self.get_all(user_id)
-        event_type_obj = EventType(event_type,
-                                   obj["is_live"],
-                                   obj["unique_per_day"])
+        objs = self.list(user_id)
+
         preferences = []
         for o in objs:
-            if o["preference_type"] == "BookableHoursPreference":
-                pref = preference.BookableHoursPreference(o["preference_type"],
-                                                          event_type,
-                                                          o["args"])
+            pref = USER_PREFERENCES.get(o["preference_type"])
 
-            preferences.append(pref)
-        # if "DoNotDisturbPreference",
-        #                     "DurationPreference", "TimeBetweenPreference",
-        #                     "MaxDistancePreference", "ModeOfCommunicationPreference"
+            preferences.append(
+                pref(preference_name=o.get("preference_name", ""),
+                     event_type=o.get("event_type", ""),
+                     args=ast.literal_eval(o.get("attributes", {})))
+                )
 
         return preferences
 

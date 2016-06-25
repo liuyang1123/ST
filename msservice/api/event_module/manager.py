@@ -1,14 +1,34 @@
 import rethinkdb as r
+from msservice.settings import RDB_HOST, RDB_PORT
 from rethinkdb.errors import RqlRuntimeError
 from api.event_module.event_type import EventType
 
 
-EVENT_TYPES = ["call", "appointment", "breakfast", "lunch", "dinner", "hangout",
-               "travel", "meeting"]
+EVENT_TYPES_DICT = {
+    "call": {"unique_per_day": False,
+             "is_live": False},
+    "appointment": {"unique_per_day": False,
+                    "is_live": True},
+    "breakfast": {"unique_per_day": True,
+                  "is_live": True},
+    "lunch": {"unique_per_day": True,
+              "is_live": True},
+    "dinner": {"unique_per_day": True,
+               "is_live": True},
+    "hangout": {"unique_per_day": False,
+                "is_live": True},
+    "travel": {"unique_per_day": False,
+               "is_live": True},
+    "meeting": {"unique_per_day": False,
+                "is_live": True}
+}
+
+DEFAULT_EVENT_TYPE = "meeting"
+
+EVENT_TYPES = ["call", "appointment", "breakfast", "lunch",
+               "dinner", "hangout", "travel", "meeting"]
 
 # RETHINKDB SETTINGS
-RDB_HOST = "rethinkdb"
-RDB_PORT = 28015
 EVENT_TYPES_DB = "eventtypes"
 EVENT_TYPES_TABLE = "eventtypes"
 
@@ -97,7 +117,7 @@ class LocationManager:
             {"event_type": event_type}).run(self.connection))
         return selection
 
-    def event_type_object(self, event_type):
+    def location_object(self, event_type):
         obj = self.get(event_type)
         locatin_obj = Location(obj["name"],
                                obj["description"],
@@ -127,43 +147,43 @@ class LocationManager:
 DEFAULT_EVENT_TYPES = [
     {
         "event_type": "call",
-        "unique_per_day": "false",
-        "is_live": "false"
+        "unique_per_day": False,
+        "is_live": False
     },
     {
         "event_type": "appointment",
-        "unique_per_day": "false",
-        "is_live": "true"
+        "unique_per_day": False,
+        "is_live": True
     },
     {
         "event_type": "breakfast",
-        "unique_per_day": "true",
-        "is_live": "true"
+        "unique_per_day": True,
+        "is_live": True
     },
     {
         "event_type": "lunch",
-        "unique_per_day": "true",
-        "is_live": "true"
+        "unique_per_day": True,
+        "is_live": True
     },
     {
         "event_type": "dinner",
-        "unique_per_day": "true",
-        "is_live": "true"
+        "unique_per_day": True,
+        "is_live": True
     },
     {
         "event_type": "hangout",
-        "unique_per_day": "false",
-        "is_live": "true"
+        "unique_per_day": False,
+        "is_live": True
     },
     {
         "event_type": "travel",
-        "unique_per_day": "false",
-        "is_live": "true"
+        "unique_per_day": False,
+        "is_live": True
     },
     {
         "event_type": "meeting",
-        "unique_per_day": "false",
-        "is_live": "true"
+        "unique_per_day": False,
+        "is_live": True
     }
 ]
 

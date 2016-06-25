@@ -1,5 +1,5 @@
 from pomegranate import *
-from soft_constraints_model import SoftConstraintsModel
+from .soft_constraints_model import SoftConstraintsModel
 import json
 
 types_opt = ['breakfast', 'lunch', 'dinner',

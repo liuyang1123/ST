@@ -174,8 +174,18 @@ class PreferenceViewSet(viewsets.ViewSet):
 
         preference_manager = UserPreferencesManager()
         # TODO Catch if not exists
+        pref_instance = preference_manager.get(decoded_token['user_id'], pk)
+
+        if len(pref_instance) == 0:
+            preference_manager.close()
+            return Response({
+                'message': 'Provide the object id.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            pref_instance = pref_instance[0]
+
         serializer = PreferenceSerializer(
-            instance=preference_manager.get(decoded_token['user_id'], pk)[0],
+            instance=pref_instance,
             data=request.data,
             partial=True)
 

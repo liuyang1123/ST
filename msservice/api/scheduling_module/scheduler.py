@@ -1,84 +1,88 @@
 from api.learning_module.hard_constraints.rules.manager import RulesManager
-from api.learning_module.hard_constraints.preferences.manager import UserPreferencesManager
-from api.learning_module.soft_constraints.bayesian_network import BayesianNetworkModel
-
 
 class Scheduler:
 
-    def __init__(self, list_of_events, sc_model=BayesianNetworkModel):
-        # TODO Sort self.events by its importance and precedence
-        self.events = list_of_events  # self._sort_events()
-        # upm = UserPreferencesManager()
-        # preferences = ump.get_list_objects()
-        # self.hc = HardConstraint()
-        self.sc = sc_model()
+    def __init__(self, list_of_events):
+        self.events = self._sort_events(list_of_events)
 
-    def _sort_events(self):
+    def _sort_events(self, events_to_sort):
         """
         Sorts the events by importance, keeping the corresponding precedence.
         """
-        return
+        # TODO Sort self.events by its importance and precedence
+        return events_to_sort
 
     def _get_available_slots(self, event):
         """
         Call the database manager
+        Returns a set of free timeslots
         """
-        return
-
-    def _get_attendees_with_an_account(self, attendees):
-        result = []
-        # Returns a list of user_id
-        for attendee in attendees:
-            try:
-                request = requests.post("http://172.17.0.1:8000/api/v1/" + CLIENT_ID + '/get_user_by_email/',
-                                        data={"email": attendee})
-                if request.status_code == 200:
-                    result.append(request.json()['user_id'])
-            except requests.exceptions.RequestException as e:
-                pass
-        return result
+        return []
 
     def best_slots(self, k=1, alpha=1, beta=1):
         """
-        Calculate the objective function for all the meetings, and return the
-        best time for each one of them.
+        Calculate the objective function for all the meetings, and return the k
+        best times for each one of them.
 
         TODO:
             - Hasta ahora se prioriza los eventos y por cada evento se trata de elegir la mejor opcion.
                 - La idea seria probar distintas opciones que maximice el beneficio general y no solo
                 por evento. Ver Meeting Scheduling Based on Swarm Intelligence
         """
+# TODO (1) Figure out if it's possible or better to make a query that selects all the corresponding slots for all users at the same time
+# TODO (2) Enable re-scheduling
+# TODO (3) Make more efficient the get_available_slots so that it doesn't query the database if it's is in the same range of time
+# TODO (4) Recommend a place if not one is given. If we are in an
+# office context, that location should be one of the free rooms.
+# Look for yelp. And historic data.
+        hc = RulesManager()
         for i, event in enumerate(events):
-            # TODO (1) Figure out if it's possible or better to make a query that selects all the corresponding slots for all users at the same time
-            # TODO (2) Enable re-scheduling
-            # TODO (3) Make more efficient the get_available_slots so that it doesn't query the database if it's is in the same range of time
-            # TODO (4) Recommend a place if not one is given. If we are in an
-            # office context, that location should be one of the free rooms.
-            # Look for yelp. And historic data.
+            print("Event: " + str(i))
+            event_to_schedule = Event(event)
             available_slots = self._get_available_slots(
                 event)  # This are the initiators timeslots
             slots = {}
             for j, slot in enumerate(available_slots):
-                event.start_time = slot.get_initial()
-                event.end_time = slot.get_end()
-                if self.hc.score(event):
-                    sc_score = self.sc.predict(event)
+                print("Slot: ")
+                print(slot.get_initial())
+                print(slot.get_end())
+                event_to_schedule.start_time = slot.get_initial()
+                event_to_schedule.end_time = slot.get_end()
+                # TODO Use the rules possible_solution method
+                print("HC is valid?")
+                print(hc.is_valid(event_to_schedule))
+                if hc.is_valid(event_to_schedule):
                     actual_pref_score = 0.0
+                    sc_score = 0.0
                     for p in event.participants:
-                        actual_pref_score += p.get_preference_score(event)
-                    slots[j] = alpha * sc_score + beta * actual_pref_score
+                        actual_pref_score += p.get_score(event)
+                        print("Participant: " + p.user_id)
+                        print("Score: " + p.get_score(event))
+                        # sc_score += p.get_prediction(event)
+                    slots[j] = alpha * actual_pref_score + beta * sc_score
+                else:
+                    #possible_solution -> redo loop
+                    pass
 
             ids_sorted_by_constraints = sorted(slots,
                                                key=slots.get)[:k]  # Sort and get the top k slots
-            self.save_selected_slots(
-                event, [available_slots[r] for r in ids_sorted_by_constraints])
+
+
+            # self.save_selected_slots(
+            #     event, [available_slots[r] for r in ids_sorted_by_constraints])
             # This should be a parameter, if I want to see different options, or to just schedule
             # Remove the selected slot when implementing (3)
             # The top option
-            self.event.assign(available_slots[ids_sorted_by_constraints[0]])
+            # self.event.assign(available_slots[ids_sorted_by_constraints[0]])
 
-        def select_best_slot(self, k=1, alpha=1, beta=1):
-            self.best_slots()
+    def select_slot(self, k=1, alpha=1, beta=1):
+        self.best_slots(k, alpha, beta)
+
+    def cleanup(self):
+        for event in self.events:
+            for attendee in event.participants:
+                attendee.cleanup()
+
 
 # S = slots(day=n)
 # for a in attendees:

@@ -164,7 +164,9 @@ class Event:
         return selection
 
     def get_event_with_pk(self, event_id):
-        selection = list(self.event_table.get(event_id).run(self.connection))
+        selection = list(self.event_table.filter(
+            {"id": event_id}
+        ).run(self.connection))
 
         return selection
 

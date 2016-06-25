@@ -10,8 +10,8 @@ class CalendarDBClient():
 
     def get_event(self, pk):
         try:
-            request = requests.get(self.CALENDAR_URL + self.CLIENT_ID + '/' +
-                                   user_id + '/events/' + pk + '/')
+            request = requests.get(self.CALENDAR_URL + 'c/' + self.CLIENT_ID + '/u/' +
+                                   '554-586-725/events/' + str(pk) + '/')
             return request.json()
         except requests.exceptions.RequestException as e:
             pass

@@ -7,7 +7,7 @@ DISTANCE = "distance"
 MODE_OF_COMMUNICATION = "mode_of_communication"
 
 
-class Preference:
+class Preference(object): # Python 2
     """
     Clase padre
     """
@@ -35,7 +35,8 @@ class Preference:
 class BookableHoursPreference(Preference):
 
     def __init__(self, preference_name, event_type=ANY, args=dict()):
-        super().__init__(preference_name, event_type, args)
+        super(BookableHoursPreference, self).__init__(preference_name, event_type, args)
+        # super().__init__(preference_name, event_type, args)
         self.start = args.get(START_TIME, None)
         self.end = args.get(END_TIME, None)
 
@@ -51,7 +52,8 @@ class BookableHoursPreference(Preference):
 class DoNotDisturbPreference(Preference):
 
     def __init__(self, preference_name, event_type=ANY, args=dict()):
-        super().__init__(preference_name, event_type, args)
+        super(DoNotDisturbPreference, self).__init__(preference_name, event_type, args)
+        # super().__init__(preference_name, event_type, args)
         self.start = args.get(START_TIME, None)
         self.end = args.get(END_TIME, None)
 
@@ -67,7 +69,8 @@ class DoNotDisturbPreference(Preference):
 class DurationPreference(Preference):
 
     def __init__(self, preference_name, event_type=ANY, args=dict()):
-        super().__init__(preference_name, event_type, args)
+        super(DurationPreference, self).__init__(preference_name, event_type, args)
+        # super().__init__(preference_name, event_type, args)
         self.duration = args.get(DURATION, None)
 
     def _calculate_confidence_score(self, event):
@@ -84,7 +87,8 @@ class TimeBetweenPreference(Preference):
     # after a certain time
 
     def __init__(self, preference_name, event_type=ANY, args=dict()):
-        super().__init__(preference_name, event_type, args)
+        super(TimeBetweenPreference, self).__init__(preference_name, event_type, args)
+        # super().__init__(preference_name, event_type, args)
         self.duration = args.get(DURATION, None)
 
     def _calculate_confidence_score(self, event):
@@ -107,7 +111,8 @@ class TimeBetweenPreference(Preference):
 class MaxDistancePreference(Preference):
 
     def __init__(self, preference_name, event_type=ANY, args=dict()):
-        super().__init__(preference_name, event_type, args)
+        # super().__init__(preference_name, event_type, args)
+        super(MaxDistancePreference, self).__init__(preference_name, event_type, args)
         self.distance = args.get(DISTANCE, None)
 
     def _calculate_confidence_score(self, event):
@@ -127,7 +132,8 @@ class MaxDistancePreference(Preference):
 class ModeOfCommunicationPreference(Preference):
 
     def __init__(self, preference_name, event_type=ANY, args=dict()):
-        super().__init__(preference_name, event_type, args)
+        super(ModeOfCommunicationPreference, self).__init__(preference_name, event_type, args)
+        # super().__init__(preference_name, event_type, args)
         # This should be a vector with probabilities.
         self.mode = args.get(MODE_OF_COMMUNICATION, None)
 

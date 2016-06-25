@@ -1,0 +1,1 @@
+Build a proper class to connect this service with the User Service, Calendar Service

@@ -268,7 +268,8 @@ class QViewSet(viewsets.ViewSet):
                 'message': 'Provide the object id.'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        if not self.is_valid(client_id, user_id):
+        # TODO Add a different endpoint without using user_id
+        if not self.is_valid(client_id, user_id) or not user_id=="554-586-725":
             return Response({"message": "Not found."},
                             status=status.HTTP_404_NOT_FOUND)
 

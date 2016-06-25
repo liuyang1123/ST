@@ -20,6 +20,11 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 USER_SERVICE_TOKEN_VERIFICATION_URL = "http://172.17.0.1:8000/auth/verify/"
 USER_SERVICE_PROFILE_URL = "http://172.17.0.1:8000/api/v1/users/me/"
 USER_SERVICE_BASE_URL = "http://172.17.0.1:8000/"
+US_CLIENT_ID = "72c691c5-3ee8-40c2-b617-e3e5510b12b6"
+
+
+RDB_HOST = "127.0.0.1"  # "rethinkdb"
+RDB_PORT = 28015
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.9/howto/deployment/checklist/
