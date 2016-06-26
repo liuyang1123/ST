@@ -47,8 +47,10 @@ class CalendarDBClient():
 
     def free_busy(self, user_id, from_date, to_date):
         try:
-            request = requests.get(self.CALENDAR_URL + 'c/' + self.CLIENT_ID + '/u/' +
-                                   str(user_id) + '/events/free_busy/')
+            request = requests.post(self.CALENDAR_URL + 'c/' + self.CLIENT_ID +
+                                    '/u/' + str(user_id) + '/events/free_busy/',
+                                    data={"from_date": from_date,
+                                          "to_date": to_date})
             return request.json()
         except requests.exceptions.RequestException as e:
             pass

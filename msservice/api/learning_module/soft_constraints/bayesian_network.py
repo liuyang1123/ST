@@ -1,6 +1,8 @@
+import json
 from pomegranate import *
 from .soft_constraints_model import SoftConstraintsModel
-import json
+from api.config import SLOT_SIZE
+
 
 types_opt = ['breakfast', 'lunch', 'dinner',
              'hangout', 'call', 'meeting']
@@ -14,7 +16,7 @@ place_opt = ['Home', 'Office', 'X']
 
 participate_opt = [False, True]
 
-timeslot_size = 30  # Minutes
+timeslot_size = SLOT_SIZE  # Minutes
 total_number_of_timeslots = (60 / timeslot_size) * \
     24  # Slots per hour * total hours
 

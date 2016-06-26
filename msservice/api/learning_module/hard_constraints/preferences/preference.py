@@ -105,7 +105,7 @@ class TimeBetweenPreference(Preference):
         # if _y <= duration:
         #   dist += la distancia normalizada
         # retornar -abs(dist)
-        return
+        return 0
 
 
 class MaxDistancePreference(Preference):
@@ -137,7 +137,7 @@ class ModeOfCommunicationPreference(Preference):
         # This should be a vector with probabilities.
         self.mode = args.get(MODE_OF_COMMUNICATION, None)
 
-    def confidence_score(self, event):
+    def _calculate_confidence_score(self, event):
         """
         Calculates the cosine / distance between the event value and the
         preferred value.

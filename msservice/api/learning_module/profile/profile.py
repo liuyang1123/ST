@@ -40,8 +40,8 @@ class Attendee:
     def get_score(self, event):
         result = 0.0
 
-        for pref in self.preferences:
-            result += pref.score(event)
+        for pref in self._preferences:
+            result += pref.confidence_score(event)
 
         return result / event.number_of_participants()
 
@@ -61,7 +61,14 @@ class Attendee:
 
 
 
+    def get_location_city(self, datetime_val):
+        # TODO Returns the city where the user will be at datetime_val
+        return ""
 
+    def get_location(self, datetime_val):
+        # TODO Get location if there is information, or predict it
+        # returns a Location object
+        return ""
 
     def get_preference(string):
         """
@@ -69,11 +76,6 @@ class Attendee:
         """
 
         # TODO - Database
-        return
-
-    def get_location(datetime):
-        # TODO Get location if there is information, or predict it
-        # returns a Location object
         return
 
     def exists_event(self, event_type, day):

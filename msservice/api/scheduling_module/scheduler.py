@@ -1,4 +1,6 @@
 from api.learning_module.hard_constraints.rules.manager import RulesManager
+from api.event_module.timeslots import TimeSlotManager
+from api.event_module.event import Event
 
 class Scheduler:
 
@@ -36,37 +38,56 @@ class Scheduler:
 # office context, that location should be one of the free rooms.
 # Look for yelp. And historic data.
         hc = RulesManager()
-        for i, event in enumerate(events):
-            print("Event: " + str(i))
-            event_to_schedule = Event(event)
-            available_slots = self._get_available_slots(
-                event)  # This are the initiators timeslots
+        for i, event in enumerate(self.events):
+            duration = event.duration
+            if duration == -1:
+                duration = 30 # TODO infer
+            ts_manager = TimeSlotManager(user_id=event.participants[-1].user_id,
+                                         start_period=event.start_time,
+                                         end_period=event.end_time,
+                                         duration=duration)
+
+            event_to_schedule = Event(participants=event.participants,
+                                      event_type=event.event_type,
+                                      description=event.description,
+                                      duration=event.duration,
+                                      start_time=event.start_time,
+                                      end_time=event.end_time,
+                                      location=event.location)
             slots = {}
-            for j, slot in enumerate(available_slots):
-                print("Slot: ")
-                print(slot.get_initial())
-                print(slot.get_end())
-                event_to_schedule.start_time = slot.get_initial()
+            slots_score = {}
+            j = 0
+            while ts_manager.has_next():
+                slot = ts_manager.next()
+                if slot is None:
+                    break
+
+                event_to_schedule.start_time = slot.get_start()
                 event_to_schedule.end_time = slot.get_end()
                 # TODO Use the rules possible_solution method
-                print("HC is valid?")
-                print(hc.is_valid(event_to_schedule))
-                if hc.is_valid(event_to_schedule):
+                if hc.is_valid(event_to_schedule) == 1:
                     actual_pref_score = 0.0
                     sc_score = 0.0
                     for p in event.participants:
                         actual_pref_score += p.get_score(event)
-                        print("Participant: " + p.user_id)
-                        print("Score: " + p.get_score(event))
+                        print("Participant: " + str(p.user_id))
+                        print("Score: " + str(p.get_score(event)))
                         # sc_score += p.get_prediction(event)
-                    slots[j] = alpha * actual_pref_score + beta * sc_score
+                    slots[j] = {"start": slot.get_start(),
+                                "end": slot.get_end()}
+                    slots_score[j] = alpha * actual_pref_score + beta * sc_score
+                    j += 1
+                    # TODO Break the loop. Right now it's going to analyze 15 days. Infer the best day.
                 else:
                     #possible_solution -> redo loop
                     pass
 
-            ids_sorted_by_constraints = sorted(slots,
-                                               key=slots.get)[:k]  # Sort and get the top k slots
+            print(slots_score)
 
+            ids_sorted_by_constraints = sorted(slots_score,
+                                               key=slots_score.get)[:k]  # Sort and get the top k slots
+            print("IDs sorted by constraints:")
+            print(ids_sorted_by_constraints)
 
             # self.save_selected_slots(
             #     event, [available_slots[r] for r in ids_sorted_by_constraints])

@@ -215,9 +215,11 @@ class Event:
         return selection
 
     def free_busy(self, user_id, from_date, to_date):
-        dtz = '+00:00'  # Default Timezone
+        dtz = 'Z'  # Default Timezone
 
         selection = list(self.event_table.filter({"user_id": user_id}).filter(
+            (r.row["start"] != r.expr("")) & (r.row["end"] != r.expr(""))
+        ).filter(
             r.iso8601(r.row['start'],
                       default_timezone=dtz).during(
                           r.iso8601(from_date,

@@ -15,6 +15,9 @@ class LiveEventRule(Rule):
         Retorna 1 si la condicion de la regla se cumple.
         Retorna 0 en otro caso.
         """
+
+        return 1
+        # TODO
         if event.is_live():
             for attendee in event.participants:
                 # Cities

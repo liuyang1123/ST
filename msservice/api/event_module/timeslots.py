@@ -1,103 +1,108 @@
+from datetime import datetime, timedelta
+from dateutil.parser import parse
 from calendar_client import CalendarDBClient
+from api.config import SLOT_SIZE
 
 # TODO Transfer this to calendar_client
 
-
-class TimeSlot:
-    __start = None
-    __end = None
+class TimeSlot(object): # Python 2
+    _start = None
+    _end = None
 
     def __init__(self, start=None, end=None):
-        self.__start = start
-        self.__end = end
+        self._start = start
+        self._end = end
 
     def get_start(self):
-        return self.__start
+        return self._start
 
     def set_start(self, start):
-        self.__start = start
+        self._start = start
 
     def get_end(self):
-        return self.__end
+        return self._end
 
     def set_end(self, end):
-        self.__end = end
-
-    def to_json(self):
-        """
-        {"start": __start, "end": __end}
-        """
-        pass
+        self._end = end
 
 
-class TimeSlotManager:
+class TimeSlotManager(object): # Python 2
     """
     """
 
     def __init__(self, user_id, start_period, end_period, duration):
-        self.__user_id = user_id
-        self.__start_period = start_period  # Initial value of the interval
-        self.__end_period = end_period  # Final value of the interval
-        # self.__duration = duration
-        self.__iterator = 0
-        self.__db_client = CalendarDBClient()
-        self.__time_slots = self.__filter()
+        self._user_id = user_id
+        self._start_period = start_period  # Initial value of the interval
+        self._end_period = end_period  # Final value of the interval
 
-        self.number_of_slots = duration / 5
-        self.slot_delta = datetime.timedelta(
-            seconds=(5 * 60))  # 5 Min = size of one slot
-        self.day_delta = datetime.timedelta(days=1)
-        self.are_more_slots = True
+        self._iterator = 0
+        self.number_of_slots = duration / SLOT_SIZE
+        self.slot_delta = timedelta(minutes=SLOT_SIZE)  # 5 Min = size of one slot
+        self.duration_delta = self.number_of_slots * self.slot_delta
+        self.day_delta = timedelta(days=1)
+        self.are_more_days_to_query = False
 
-    def __filter(self):
-        # TODO
-        # Para filtrar se usan las hard constraints. Falta tener en cuenta L, M, M, J, V, S, D (cambiaria la forma de obtener los valores free_busy)
-        # y se ordenan por las softconstraints
-        # se tendria que pasar un parametro, de severidad (1=todo se tiene que
-        # cumplir, 0.7=al no llegar a un acuerdo se trata de hacer cambios el
-        # minimo del confidence score)
-        self.__iterator = 0
+        self._db_client = CalendarDBClient()
+        self._time_slots = self._filter()
 
+    def _filter(self):
         result = []
-        free_space = []
-        if self.__start_period + day_delta <= self.__end_period:
-            free_space = self.__db_client.free_busy(
-                self.__user_id, self.__start_period, self.__start_period + day_delta)
-            self.__start_period = self.__start_period + day_delta
+        busy_space = []
+
+        start = datetime.combine(self._start_period,
+                                 datetime.min.time())
+        end = datetime.combine(self._start_period, datetime.min.time()) + self.duration_delta
+        max_datetime = None
+
+        if self._start_period + self.day_delta <= self._end_period:
+            # To make this more efficient, it will only query one day at a time.
+            busy_space = self._db_client.free_busy(
+                self._user_id, self._start_period,
+                self._start_period + self.day_delta)
+            max_datetime = datetime.combine(self._start_period + self.day_delta,
+                                            datetime.min.time())
+            self._start_period = self._start_period + self.day_delta
+            self.are_more_days_to_query = True
         else:
-            free_space = self.__db_client.free_busy(
-                self.__user_id, self.__start_period, self.__end_period)
-            self.are_more_slots = False
+            busy_space = self._db_client.free_busy(
+                self._user_id, self._start_period, self._end_period)
+            self.are_more_days_to_query = False
+            max_datetime = datetime.combine(self._end_period,
+                                            datetime.min.time())
 
-        for space in free_space:
-            start_date = parse(space['start'])
-            end_date = parse(space['end'])
-            number_of_slots_in_this_space = (
-                end_date - start_date).seconds / 60 / 5
-            i = 0
+        self._iterator = 0
 
-            if self.number_of_slots < number_of_slots_in_this_space:
-                while i < (number_of_slots_in_this_space -
-                           self.number_of_slots):
-                    timeslot = TimeSlot(
-                        start_date, start_date + self.number_of_slots * self.slot_delta)
-                    result.append(timeslot)
-                    i += 1
-                    start_date = start_date + self.slot_delta
+        slot_iterator = 0
+
+        while end <= max_datetime:
+            if slot_iterator < len(busy_space):
+                # Check that the slot is valid
+                if end <= parse(busy_space[slot_iterator]["start"]):
+                    result.append(TimeSlot(start, end))
+                    start = end
+                    end = start + self.duration_delta
+                else:
+                    start = parse(busy_space[slot_iterator]["end"])
+                    end = start + self.duration_delta
+                    slot_iterator += 1
+            else:
+                result.append(TimeSlot(start, end))
+                start = end
+                end = start + self.duration_delta
 
         return result
 
     def has_next(self):
-        return (self.__iterator < len(self.__time_slots)) or self.are_more_slots
+        return (self._iterator < len(self._time_slots)) or self.are_more_days_to_query
 
     def next(self):
         result = None
 
-        if self.__iterator < len(self.__time_slots):
-            result = self.__time_slots[self.__iterator]
-            self.__iterator += 1
-        elif self.are_more_slots:
-            self.__time_slots = self.__filter()
+        if self._iterator < len(self._time_slots):
+            result = self._time_slots[self._iterator]
+            self._iterator += 1
+        elif self.are_more_days_to_query:
+            self._time_slots = self._filter()
             result = self.next()
 
         return result

@@ -1,4 +1,4 @@
-class Event(object):
+class Event(object): # Python 2
 
     def __init__(self, participants, event_type=None, description=None,
                  duration=None, start_time=None, end_time=None, location=None):
@@ -12,17 +12,6 @@ class Event(object):
         self.importance = None  # Calculate lambda
         self.mode_of_communication = None
 
-    def __init__(self, event):
-        self.participants = event.participants
-        self.event_type = event.event_type
-        self.description = event.description
-        self.duration = event.duration
-        self.start_time = event.start_time
-        self.end_time = event.end_time
-        self.location = event.location
-        self.importance = None  # Calculate lambda
-        self.mode_of_communication = None
-
     def set_mode_of_communication(self, mode_of_communication):
         self.mode_of_communication = mode_of_communication
 
@@ -33,7 +22,7 @@ class Event(object):
     def get_day(self):
         return self.start_time.date()
 
-    def exists_overlap(self, other_event):
+    def exists_overlap(self):
         """
         Verifica que no exista otro evento, tal que:
             - Alguno de los participantes es tambien participante del otro evento
@@ -46,6 +35,7 @@ class Event(object):
                 location.is_free()
         Return True or False
         """
+        # TODO After improving the Location knowledge
         return False
 
     def is_a_valid_location(self):
