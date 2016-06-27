@@ -16,9 +16,7 @@ place_opt = ['Home', 'Office', 'X']
 
 participate_opt = [False, True]
 
-timeslot_size = SLOT_SIZE  # Minutes
-total_number_of_timeslots = (60 / timeslot_size) * \
-    24  # Slots per hour * total hours
+total_number_of_timeslots = (60 / SLOT_SIZE) * 24  # Slots per hour * total hours
 
 
 class BayesianNetworkModel(SoftConstraintsModel):
@@ -60,10 +58,19 @@ class BayesianNetworkModel(SoftConstraintsModel):
         return values
 
     def score_event(self, event):
-        args = {}
-        # TODO Armar un diccionario con los datos del evento
+        hour = event.start_time.time().hour
+        minute = event.start_time.time().minute
+        time = hour * 12 + minute / SLOT_SIZE
 
-        return self.predict(args)
+        args = {"type": str(event.event_type),
+                "duration": event.duration,
+                "day": event.start_time.weekday(),
+                "time": time}
+
+        result = self.predict(args)
+
+        return float(json.loads(
+            result["participant"]).get("parameters")[0]['true'])
 
     def train(self, data, labels):
         if not self.model and len(data) > 0:

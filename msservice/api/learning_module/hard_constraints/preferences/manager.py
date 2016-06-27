@@ -6,6 +6,7 @@ from rethinkdb.errors import RqlRuntimeError
 from api.learning_module.hard_constraints.preferences import preference
 from api.event_module.manager import EVENT_TYPES_DICT, DEFAULT_EVENT_TYPE
 from api.event_module.event_type import EventType
+from datetime import time
 
 USER_PREFERENCES = {
     "BookableHoursPreference": preference.BookableHoursPreference,
@@ -15,6 +16,45 @@ USER_PREFERENCES = {
     "MaxDistancePreference": preference.MaxDistancePreference,
     "ModeOfCommunicationPreference": preference.ModeOfCommunicationPreference
 }
+
+DEFAULT_USER_PREFERENCES = [
+    {"preference_type": "BookableHoursPreference",
+     "preference_name": "breakfast time",
+     "event_type": "breakfast",
+     "attributes": {
+         "start": time(hour=7, minute=30),
+         "end": time(hour=11, minute=30)}},
+    {"preference_type": "BookableHoursPreference",
+     "preference_name": "lunch time",
+     "event_type": "lunch",
+     "attributes": {
+         "start": time(hour=11, minute=30),
+         "end": time(hour=14, minute=30)}},
+    {"preference_type": "BookableHoursPreference",
+     "preference_name": "dinner time",
+     "event_type": "dinner",
+     "attributes": {
+         "start": time(hour=16, minute=30),
+         "end": time(hour=23, minute=59)}},
+    {"preference_type": "BookableHoursPreference",
+     "preference_name": "hangout time",
+     "event_type": "hangout",
+     "attributes": {
+         "start": time(hour=0, minute=0),
+         "end": time(hour=23, minute=59)}},
+    {"preference_type": "BookableHoursPreference",
+     "preference_name": "call time",
+     "event_type": "call",
+     "attributes": {
+         "start": time(hour=8, minute=30),
+         "end": time(hour=18, minute=0)}},
+    {"preference_type": "BookableHoursPreference",
+     "preference_name": "meeting time",
+     "event_type": "meeting",
+     "attributes": {
+         "start": time(hour=8, minute=30),
+         "end": time(hour=18, minute=0)}}
+]
 
 # RETHINKDB SETTINGS
 USER_PREFERENCES_DB = "user_preferences"
@@ -28,7 +68,7 @@ class UserPreferencesManager:
     user_id : UUID
     event_type : String
     preference_type : String
-    args : Dictionary
+    attributes : Dictionary
     """
 
     def __init__(self):
@@ -57,15 +97,24 @@ class UserPreferencesManager:
 
     def get_list_objects(self, user_id):
         objs = self.list(user_id)
+        default = False
+
+        if len(objs) == 0:
+            objs = DEFAULT_USER_PREFERENCES
+            default = True
 
         preferences = []
         for o in objs:
             pref = USER_PREFERENCES.get(o["preference_type"])
+            args = o.get("attributes", {})
+
+            if not default:
+                args = ast.literal_eval(args)
 
             preferences.append(
                 pref(preference_name=o.get("preference_name", ""),
                      event_type=o.get("event_type", ""),
-                     args=ast.literal_eval(o.get("attributes", {})))
+                     args=args)
                 )
 
         return preferences
@@ -90,15 +139,6 @@ class UserPreferencesManager:
         return self.USER_PREFERENCES_TABLE.filter({
             "user_id": user_id
         }).delete().run(self.connection)
-
-DEFAULT_USER_PREFERENCES = [
-    {
-        "event_type": "",
-        "user_id": "",
-        "preference_type": "ANY",
-        "args": {}
-    },
-]
 
 
 def run_setup():

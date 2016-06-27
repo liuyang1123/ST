@@ -1,3 +1,5 @@
+from api.config import SLOT_SIZE
+
 class Event(object): # Python 2
 
     def __init__(self, participants, event_type=None, description=None,
@@ -36,6 +38,9 @@ class Event(object): # Python 2
         Return True or False
         """
         # TODO After improving the Location knowledge
+        for p in self.participants:
+            if not p.is_available(self.start_time, self.end_time):
+                return True
         return False
 
     def is_a_valid_location(self):
@@ -63,7 +68,12 @@ class Event(object): # Python 2
         return
 
     def time_distance(self, d1, d2):
-        # TODO
-        # m1 = max(x1, d1) m2 = max(x2, d2). dist = -(abs(x1-d1)/m1 +
-        # abs(x2-d2)/m2)
-        return
+        _x1 = self.start_time.time().hour * 12 + self.start_time.time().minute / SLOT_SIZE
+        _d1 = d1.hour * 12 + d1.minute / SLOT_SIZE
+        _x2 = self.end_time.time().hour * 12 + self.end_time.time().minute / SLOT_SIZE
+        _d2 = d2.hour * 12 + d2.minute / SLOT_SIZE
+        m1 = max(_x1, _d1)
+        m2 = max(_x2, _d2)
+        dist = -abs(_x1-_d1)/m1 - abs(_x2-_d2)/m2
+
+        return dist

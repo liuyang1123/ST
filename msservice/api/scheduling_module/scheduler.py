@@ -38,6 +38,7 @@ class Scheduler:
 # office context, that location should be one of the free rooms.
 # Look for yelp. And historic data.
         hc = RulesManager()
+        print("Scheduler!")
         for i, event in enumerate(self.events):
             duration = event.duration
             if duration == -1:
@@ -50,7 +51,7 @@ class Scheduler:
             event_to_schedule = Event(participants=event.participants,
                                       event_type=event.event_type,
                                       description=event.description,
-                                      duration=event.duration,
+                                      duration=duration,
                                       start_time=event.start_time,
                                       end_time=event.end_time,
                                       location=event.location)
@@ -65,14 +66,16 @@ class Scheduler:
                 event_to_schedule.start_time = slot.get_start()
                 event_to_schedule.end_time = slot.get_end()
                 # TODO Use the rules possible_solution method
+                print(hc.is_valid(event_to_schedule))
                 if hc.is_valid(event_to_schedule) == 1:
                     actual_pref_score = 0.0
                     sc_score = 0.0
-                    for p in event.participants:
-                        actual_pref_score += p.get_score(event)
-                        print("Participant: " + str(p.user_id))
-                        print("Score: " + str(p.get_score(event)))
-                        # sc_score += p.get_prediction(event)
+                    for p in event_to_schedule.participants:
+                        actual_pref_score += p.get_score(event_to_schedule)
+                        # print("Participant: " + str(p.user_id))
+                        print("Score: " + str(p.get_score(event_to_schedule)))
+                        # print("Prediction: " + str(p.get_prediction(event_to_schedule)))
+                        # sc_score += p.get_prediction(event_to_schedule)
                     slots[j] = {"start": slot.get_start(),
                                 "end": slot.get_end()}
                     slots_score[j] = alpha * actual_pref_score + beta * sc_score
@@ -81,8 +84,6 @@ class Scheduler:
                 else:
                     #possible_solution -> redo loop
                     pass
-
-            print(slots_score)
 
             ids_sorted_by_constraints = sorted(slots_score,
                                                key=slots_score.get)[:k]  # Sort and get the top k slots

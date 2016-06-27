@@ -2,6 +2,7 @@ import requests
 from msservice.settings import USER_SERVICE_BASE_URL, US_CLIENT_ID
 from api.learning_module.hard_constraints.preferences.manager import UserPreferencesManager
 from api.learning_module.soft_constraints.bayesian_network import BayesianNetworkModel
+from api.event_module.calendar_client import CalendarDBClient
 
 class Attendee:
 
@@ -46,11 +47,23 @@ class Attendee:
         return result / event.number_of_participants()
 
     def get_prediction(self, event):
-        # Bayesian Network or NN
-        # bn = BayesianNetworkModel(user_id)
-        # bn.build_model()
-        # result = bn.predict({})
-        return 0.0
+        result = 0.0
+
+        if self._soft_constraints is not None:
+            # Bayesian Network or NN
+            result = self._soft_constraints.score_event(event)
+
+        return result
+
+    def is_available(self, from_date, to_date):
+        if self.user_id is None:
+            return True
+
+        cl = CalendarDBClient()
+        result = cl.available(self.user_id, from_date, to_date)
+
+        return result
+
 
     def cleanup(self):
         if self._soft_constraints is not None:

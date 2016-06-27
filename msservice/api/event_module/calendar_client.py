@@ -49,8 +49,8 @@ class CalendarDBClient():
         try:
             request = requests.post(self.CALENDAR_URL + 'c/' + self.CLIENT_ID +
                                     '/u/' + str(user_id) + '/events/free_busy/',
-                                    data={"from_date": from_date,
-                                          "to_date": to_date})
+                                    data={"from_date": from_date.isoformat(),
+                                          "to_date": to_date.isoformat()})
             return request.json()
         except requests.exceptions.RequestException as e:
             pass
@@ -67,8 +67,11 @@ class CalendarDBClient():
 
     def available(self, user_id, from_date, to_date):
         try:
-            request = requests.get(self.CALENDAR_URL + 'c/' + self.CLIENT_ID + '/u/' +
-                                   str(user_id) + '/events/qavailable/')
+            request = requests.post(self.CALENDAR_URL + 'c/' + self.CLIENT_ID + '/u/' +
+                                    str(user_id) + '/events/qavailable/',
+                                    data={"from_date": from_date.isoformat(),
+                                          "to_date": to_date.isoformat()})
+
             return request.json()['available']
         except requests.exceptions.RequestException as e:
             pass
