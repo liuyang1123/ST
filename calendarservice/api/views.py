@@ -255,7 +255,7 @@ class QViewSet(viewsets.ViewSet):
 
         event = Event()
         # TODO revisarlo con el serializer
-        data = request.data
+        data = request.data.copy()
         data['updated'] = now()
         updated = event.update_event_with_pk(pk, data)
         event.close()

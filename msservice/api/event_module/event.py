@@ -65,7 +65,19 @@ class Event(object): # Python 2
         return self.event_type.is_live()
 
     def is_in_between(self, d1, d2):
-        return
+        """
+        d1 -> start_time of the preference
+        d2 -> end_time of the preference
+        """
+        _x1 = self.start_time.time().hour * 12 + self.start_time.time().minute / SLOT_SIZE
+        _d1 = d1.hour * 12 + d1.minute / SLOT_SIZE
+        _x2 = self.end_time.time().hour * 12 + self.end_time.time().minute / SLOT_SIZE
+        _d2 = d2.hour * 12 + d2.minute / SLOT_SIZE
+
+        if _d1 <= _x1 and _x2 <= _d2:
+            return True
+
+        return False
 
     def time_distance(self, d1, d2):
         _x1 = self.start_time.time().hour * 12 + self.start_time.time().minute / SLOT_SIZE

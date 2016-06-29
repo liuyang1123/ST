@@ -1,11 +1,16 @@
 from api.learning_module.hard_constraints.rules.manager import RulesManager
 from api.event_module.timeslots import TimeSlotManager
 from api.event_module.event import Event
+from api.models import Invitation
+from api.event_module.calendar_client import CalendarDBClient
+
+# TODO Add the specific timezone to the datetimes. Right now is empty.
 
 class Scheduler:
 
-    def __init__(self, list_of_events):
+    def __init__(self, list_of_events, tasks=None):
         self.events = self._sort_events(list_of_events)
+        self.tasks = tasks
 
     def _sort_events(self, events_to_sort):
         """
@@ -21,7 +26,7 @@ class Scheduler:
         """
         return []
 
-    def best_slots(self, k=1, alpha=1, beta=1):
+    def best_slots(self, event, k=1, alpha=1, beta=1, invalid=None):
         """
         Calculate the objective function for all the meetings, and return the k
         best times for each one of them.
@@ -30,6 +35,8 @@ class Scheduler:
             - Hasta ahora se prioriza los eventos y por cada evento se trata de elegir la mejor opcion.
                 - La idea seria probar distintas opciones que maximice el beneficio general y no solo
                 por evento. Ver Meeting Scheduling Based on Swarm Intelligence
+
+            Invalid are timeslots rejected by a user. Used in order to not choose the same options.
         """
 # TODO (1) Figure out if it's possible or better to make a query that selects all the corresponding slots for all users at the same time
 # TODO (2) Enable re-scheduling
@@ -38,67 +45,108 @@ class Scheduler:
 # office context, that location should be one of the free rooms.
 # Look for yelp. And historic data.
         hc = RulesManager()
-        print("Scheduler!")
-        for i, event in enumerate(self.events):
-            duration = event.duration
-            if duration == -1:
-                duration = 30 # TODO infer
-            ts_manager = TimeSlotManager(user_id=event.participants[-1].user_id,
-                                         start_period=event.start_time,
-                                         end_period=event.end_time,
-                                         duration=duration)
 
-            event_to_schedule = Event(participants=event.participants,
-                                      event_type=event.event_type,
-                                      description=event.description,
-                                      duration=duration,
-                                      start_time=event.start_time,
-                                      end_time=event.end_time,
-                                      location=event.location)
-            slots = {}
-            slots_score = {}
-            j = 0
-            while ts_manager.has_next():
-                slot = ts_manager.next()
-                if slot is None:
-                    break
+        duration = event.duration
+        if duration == -1:
+            duration = 30 # TODO infer
+        ts_manager = TimeSlotManager(user_id=event.participants[-1].user_id,
+                                     start_period=event.start_time,
+                                     end_period=event.end_time,
+                                     duration=duration)
 
-                event_to_schedule.start_time = slot.get_start()
-                event_to_schedule.end_time = slot.get_end()
-                # TODO Use the rules possible_solution method
-                print(hc.is_valid(event_to_schedule))
-                if hc.is_valid(event_to_schedule) == 1:
-                    actual_pref_score = 0.0
-                    sc_score = 0.0
-                    for p in event_to_schedule.participants:
-                        actual_pref_score += p.get_score(event_to_schedule)
-                        # print("Participant: " + str(p.user_id))
-                        print("Score: " + str(p.get_score(event_to_schedule)))
-                        # print("Prediction: " + str(p.get_prediction(event_to_schedule)))
-                        # sc_score += p.get_prediction(event_to_schedule)
-                    slots[j] = {"start": slot.get_start(),
-                                "end": slot.get_end()}
-                    slots_score[j] = alpha * actual_pref_score + beta * sc_score
-                    j += 1
-                    # TODO Break the loop. Right now it's going to analyze 15 days. Infer the best day.
-                else:
-                    #possible_solution -> redo loop
-                    pass
+        event_to_schedule = Event(participants=event.participants,
+                                  event_type=event.event_type,
+                                  description=event.description,
+                                  duration=duration,
+                                  start_time=event.start_time,
+                                  end_time=event.end_time,
+                                  location=event.location)
+        slots = {}
+        slots_score = {}
+        j = 0
+        rule_modifier = False
+        while ts_manager.has_next():
+            slot = ts_manager.next()
+            if slot is None:
+                break
 
-            ids_sorted_by_constraints = sorted(slots_score,
-                                               key=slots_score.get)[:k]  # Sort and get the top k slots
-            print("IDs sorted by constraints:")
-            print(ids_sorted_by_constraints)
+            event_to_schedule.start_time = slot.get_start()
+            event_to_schedule.end_time = slot.get_end()
 
-            # self.save_selected_slots(
-            #     event, [available_slots[r] for r in ids_sorted_by_constraints])
-            # This should be a parameter, if I want to see different options, or to just schedule
-            # Remove the selected slot when implementing (3)
-            # The top option
-            # self.event.assign(available_slots[ids_sorted_by_constraints[0]])
+            # TODO Use the rules possible_solution method
+            if hc.is_valid(event_to_schedule) == 1:
+                pref_score = 0.0
+                sc_score = 0.0
+                for p in event_to_schedule.participants:
+                    pref_score += p.get_score(event_to_schedule)
+                    sc_score += p.get_prediction(event_to_schedule)
+                    # print("Participant: " + str(p.user_id))
+                    # print("Score: " + str(p.get_score(event_to_schedule)))
+                    # print("Prediction: " + str(p.get_prediction(event_to_schedule)))
+                slots[j] = {"start": slot.get_start(),
+                            "end": slot.get_end()}
+                slots_score[j] = alpha * pref_score + beta * sc_score
+                j += 1
+                # TODO  Break the loop.
+                #       Right now it's going to analyze 15 days. Infer the best day.
+            else:
+                print("No valido")
+                if hc.has_possible_solution(event_to_schedule):
+                    event_to_schedule = hc.possible_solution(event_to_schedule)
+                    rule_modifier = True
+                    ts_manager.change_start_period(event_to_schedule.date())
+            if not ts_manager.has_next() and len(slots_score.keys()) == 0:
+                print("Entra aca!")
+                ts_manager.change_start_period(slot.get_end())
+
+        ids_sorted_by_constraints = sorted(slots_score,
+                                           key=slots_score.get,
+                                           reverse=True)[:k]  # Sort and get the top k slots
+        # print("IDs sorted by constraints:")
+        # for r in ids_sorted_by_constraints:
+        #     print(slots[r])
+
+        result = []
+        if k>1:
+            for r in ids_sorted_by_constraints:
+                result.append(slots[r])
+        else:
+            result = slots[ids_sorted_by_constraints[0]]
+
+        return result, duration
 
     def select_slot(self, k=1, alpha=1, beta=1):
-        self.best_slots(k, alpha, beta)
+        for i, event in enumerate(self.events):
+            best_slot, duration = self.best_slots(event=event, k=1,
+                                                  alpha=alpha, beta=beta)
+            event.start_time = best_slot["start"]
+            event.end_time = best_slot["end"]
+            event.duration = duration
+            # event.location =
+            # TODO change task status
+
+            self._send_invitations(i, event)
+
+    def _send_invitations(self, i, event):
+        if self.tasks is not None:
+            for attendee in event.participants:
+                if attendee.user_id is not None:
+                    e_id = None
+                    if attendee.user_id == self.tasks[i].initiator_id:
+                        e_id = self.tasks[i].event_id
+                    new_invitation = Invitation(task=self.tasks[i],
+                                                attendee=attendee.user_id,
+                                                event_id=e_id,
+                                                answered=False,
+                                                decision=False)
+                    new_invitation.save()
+
+            client = CalendarDBClient()
+            client.update_event(self.tasks[i].initiator_id,
+                                self.tasks[i].event_id,
+                                {"start": event.start_time.isoformat(),
+                                 "end": event.end_time.isoformat(),
+                                 "duration": event.duration})
 
     def cleanup(self):
         for event in self.events:

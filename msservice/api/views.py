@@ -2,10 +2,10 @@ import json
 from rest_framework import views, viewsets, status, routers
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
-from rest_framework.decorators import list_route
-from api.models import SchedulingTask
+from rest_framework.decorators import list_route, detail_route
+from api.models import SchedulingTask, Invitation
 from api.permissions import IsAuthenticated
-from api.serializers import SchedulingTaskSerializer, EventSerializer, PreferenceSerializer
+from api.serializers import SchedulingTaskSerializer, EventSerializer, PreferenceSerializer, InvitationSerializer
 from api.utils import decode_token, get_token
 from api.event_module.calendar_client import CalendarDBClient
 from api.learning_module.hard_constraints.preferences.manager import UserPreferencesManager
@@ -78,6 +78,53 @@ class ScheduleViewSet(viewsets.ViewSet):
         SchedulingTask.objects.filter(id=pk).delete()
 
         return Response({"message": "Deleted."}, status=status.HTTP_200_OK)
+
+class InvitationViewSet(viewsets.ViewSet):
+    permission_classes = (IsAuthenticated,)
+
+    def list(self, request):
+        decoded_token = decode_token(request.META)
+        serializer = InvitationSerializer(Invitation.objects.filter(
+            attendee=decoded_token['user_id']), many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @list_route(methods=['get'])
+    def pending(self, request):
+        decoded_token = decode_token(request.META)
+        serializer = InvitationSerializer(Invitation.objects.filter(
+            attendee=decoded_token['user_id'],
+            answered=False), many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @detail_route(methods=['post'])
+    def accept(self, request, pk=None):
+        decoded_token = decode_token(request.META)
+        q = Invitation.objects.filter(attendee=decoded_token['user_id'],
+                                      pk=pk)
+        if q.exists():
+            q = q[0]
+            q.answered = True
+            q.decision = True
+            q.save()
+
+        return Response({"data": "Invitation accepted."},
+                        status=status.HTTP_200_OK)
+
+    @detail_route(methods=['post'])
+    def decline(self, request, pk=None):
+        decoded_token = decode_token(request.META)
+        q = Invitation.objects.filter(attendee=decoded_token['user_id'],
+                                      pk=pk)
+        if q.exists():
+            q = q[0]
+            q.answered = True
+            q.decision = False
+            q.save()
+
+        return Response({"data": "Invitation declined."},
+                        status=status.HTTP_200_OK)
 
 
 class BNTrainingView(viewsets.ViewSet):
@@ -243,6 +290,7 @@ class PreferenceViewSet(viewsets.ViewSet):
 # Routers provide an easy way of automatically determining the URL conf.
 router = routers.DefaultRouter()
 router.register(r'scheduling', ScheduleViewSet, base_name='scheduling')
+router.register(r'invitation', InvitationViewSet, base_name='invitation')
 router.register(r'bayesiannetwork', BNTrainingView,
                 base_name='bayesiannetwork')
 router.register(r'preferences', PreferenceViewSet, base_name='preferences')

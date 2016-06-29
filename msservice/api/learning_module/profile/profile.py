@@ -38,6 +38,16 @@ class Attendee:
 
         return result
 
+    def get_preference(self, preference_type):
+        """
+        Given the name of the preference returns it's personal value.
+        """
+        for pref in self._preferences:
+            if pref.preference_type == preference_type:
+                return pref
+
+        return None
+
     def get_score(self, event):
         result = 0.0
 
@@ -64,7 +74,6 @@ class Attendee:
 
         return result
 
-
     def cleanup(self):
         if self._soft_constraints is not None:
             self._soft_constraints.close()
@@ -82,14 +91,6 @@ class Attendee:
         # TODO Get location if there is information, or predict it
         # returns a Location object
         return ""
-
-    def get_preference(string):
-        """
-        Given the name of the preference returns it's personal value.
-        """
-
-        # TODO - Database
-        return
 
     def exists_event(self, event_type, day):
         # T / F

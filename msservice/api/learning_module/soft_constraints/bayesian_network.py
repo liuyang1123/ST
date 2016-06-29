@@ -9,7 +9,8 @@ types_opt = ['breakfast', 'lunch', 'dinner',
 
 duration_opt = [15, 30, 60, 120]
 
-day_opt = [1, 2, 3, 4, 5, 6, 7]
+# Monday is 0 and Sunday is 6
+day_opt = [0, 1, 2, 3, 4, 5, 6]
 
 # TODO Construct a specific BN based on the user data
 place_opt = ['Home', 'Office', 'X']

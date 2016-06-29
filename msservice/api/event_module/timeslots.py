@@ -45,6 +45,16 @@ class TimeSlotManager(object): # Python 2
         self._db_client = CalendarDBClient()
         self._time_slots = self._filter()
 
+    def change_start_period(self, new_start_period):
+        self._start_period = new_start_period
+        self._end_period = self._start_period + timedelta(days=6)
+        self._reset()
+
+    def _reset(self):
+        self._iterator = 0
+        self.are_more_days_to_query = False
+        self._time_slots = self._filter()
+
     def _filter(self):
         result = []
         busy_space = []

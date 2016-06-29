@@ -4,10 +4,12 @@ from django.db import models
 from dateutil.parser import parse
 from api.event_module.calendar_client import CalendarDBClient
 from api.event_module.event import Event
-from api.scheduling_module.scheduler import Scheduler
 from api.learning_module.profile.profile import Attendee
 from api.event_module.manager import EVENT_TYPES_DICT, DEFAULT_EVENT_TYPE
 from api.event_module.event_type import EventType
+
+# TODO Improve the usage of task / schedule statuses.
+# TODO Use a tentative event model instead of calling the CS?
 
 class SchedulingTask(models.Model):
     TASK_TYPES = (
@@ -41,19 +43,19 @@ class SchedulingTask(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def get_event(self):
+        client = CalendarDBClient()
+        return client.get_event(self.event_id)
+
     def save(self, *args, **kwargs):
         super(SchedulingTask, self).save(*args, **kwargs)
+        from api.scheduling_module.scheduler import Scheduler
         if self.status == 'pending':
-            # from .negotiation import schedule
-            # event = get_event_by_id(self.event_id)
-            # schedule(scheduling_task_id=self.id, scheduling_task=self)
-
             # 1. Get the event object with the self.event_id attribute
-            client = CalendarDBClient()
-            event_json = client.get_event(self.event_id)
+            event_json = self.get_event()
 
             if event_json is not None and len(event_json) > 0:
-                event_json = event_json[0]
+                event_json = event_json
 
                 # Get the valid range to schedule the event
                 start = event_json.get('start', None) # Si es None -> Tomorrow
@@ -65,7 +67,9 @@ class SchedulingTask(models.Model):
                 if end is not None and end!='':
                     end = parse(end)
                 else:
-                    end = date.today() + timedelta(days=15)
+                    end = date.today() + timedelta(days=7)
+
+                print("Scheduler")
 
                 # Get the profile of every participant
                 participants = list()
@@ -93,7 +97,7 @@ class SchedulingTask(models.Model):
                               location=event_json.get('location', ''))
 
                 # 2. Create a scheduler object
-                s = Scheduler([event])
+                s = Scheduler([event], [self])
                 # 3. Select the best (n) timeslots
                 s.select_slot()
                 # Close the connection
@@ -105,3 +109,65 @@ class SchedulingTask(models.Model):
         # TODO: if task status == 'started' then update start_time value
         # TODO: if schedule status == 'tentative' then update tentative_time
         # value
+
+class Training(models.Model):
+    user_id = models.CharField(max_length=50)
+    event_type = models.CharField(max_length=30)
+    start = models.DateTimeField()
+    end = models.DateTimeField()
+    duration = models.IntegerField()
+    location = models.CharField(max_length=50, default='X')
+    feedback = models.BooleanField(default=False)
+    # participants
+    # location
+
+class Invitation(models.Model):
+    task = models.ForeignKey(SchedulingTask)
+    attendee = models.CharField(max_length=50)
+    event_id = models.UUIDField(null=True)
+    answered = models.BooleanField(default=False)
+    decision = models.BooleanField()
+
+    def save(self, *args, **kwargs):
+        super(Invitation, self).save(*args, **kwargs)
+        if self.answered:
+            event = self.task.get_event()
+
+            if not self.decision:
+                # TODO save the event as negative sampling
+                t = Training(user_id = self.attendee,
+                             event_type = event.get("categories"),
+                             start = parse(event.get("start")),
+                             end = parse(event.get("end")),
+                             duration = int(event.get("duration")),
+                             feedback = False)
+                t.save()
+            else:
+                invitations = Invitation.objects.filter(task=self.task)
+                ans = True
+                dec = True
+                for inv in invitations:
+                    if not inv.answered:
+                        ans = False
+                        break
+                    else:
+                        dec = dec & inv.decision
+                if ans:
+                    if dec:
+                        # TODO Send confirmations
+                        # TODO Update users calendars. Update event_id
+                        # TODO The initiator may already have an event assigned
+                        # TODO Change task status
+                        # TODO Remove this training example
+                        pass
+                    else:
+                        # TODO Initiate a rescheduling process, call the best_slots with the invalid parameter
+                        pass
+                # TODO Figure out if it would be a good idea to create training data from this.
+                t = Training(user_id = self.attendee,
+                             event_type = event.get("categories"),
+                             start = parse(event.get("start")),
+                             end = parse(event.get("end")),
+                             duration = int(event.get("duration")),
+                             feedback = True)
+                t.save()

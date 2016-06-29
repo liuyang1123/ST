@@ -2,6 +2,7 @@
 # Autoencoder
 import numpy as np
 from api.event_module.calendar_client import CalendarDBClient
+from api.models import Training
 
 ModeOfCommunication = "ModeOfCommunication"
 
@@ -75,7 +76,7 @@ def is_valid_for_training(event):
     return False
 
 
-def parse(events, with_labels=False):
+def parse(events, training_objs=[], with_labels=False):
     """
     Returns a list of vectors:
         [ [event_type, duration, day, timeslot, location, accepted] ]
@@ -104,6 +105,12 @@ def parse(events, with_labels=False):
             if with_labels:
                 labels.append([])
 
+    for to in training_objs:
+        # ...
+        values.append([])
+        if with_labels:
+            labels.append(to.feedback)
+
     if with_labels:
         return values, labels
     else:
@@ -113,7 +120,9 @@ def parse(events, with_labels=False):
 def read_data_sets_bn(user):
     db_client = CalendarDBClient()
     events = db_client.list_all_events(user)
-    data = parse(events, False)
+    training_objs = Training.objects.filter(attendee=user)
+    data = parse(events, training_objs, False)
+    # TODO Add the use of Training
 
     data_sets = DataSets()
     data_sets.train = DataSet(data, [])

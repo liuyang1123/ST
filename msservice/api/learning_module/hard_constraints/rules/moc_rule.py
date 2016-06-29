@@ -31,10 +31,11 @@ class ModeOfCommunicationRule(Rule):
         moc_pref = dict()
         for i in invitees:
             p = i.get_preference(MODE_OF_COMMUNICATION)
-            if p in moc_pref:
-                moc_pref[p] += 1
-            else:
-                moc_pref[p] = 1
+            if p is not None:
+                if p in moc_pref:
+                    moc_pref[p] += 1
+                else:
+                    moc_pref[p] = 1
 
         # Set the mode of communication for the event
         event.set_mode_of_communication(max(moc_pref, key=moc_pref.get))

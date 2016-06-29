@@ -22,38 +22,38 @@ DEFAULT_USER_PREFERENCES = [
      "preference_name": "breakfast time",
      "event_type": "breakfast",
      "attributes": {
-         "start": time(hour=7, minute=30),
-         "end": time(hour=11, minute=30)}},
+         "start_time": time(hour=7, minute=30),
+         "end_time": time(hour=11, minute=30)}},
     {"preference_type": "BookableHoursPreference",
      "preference_name": "lunch time",
      "event_type": "lunch",
      "attributes": {
-         "start": time(hour=11, minute=30),
-         "end": time(hour=14, minute=30)}},
+         "start_time": time(hour=11, minute=30),
+         "end_time": time(hour=14, minute=30)}},
     {"preference_type": "BookableHoursPreference",
      "preference_name": "dinner time",
      "event_type": "dinner",
      "attributes": {
-         "start": time(hour=16, minute=30),
-         "end": time(hour=23, minute=59)}},
+         "start_time": time(hour=16, minute=30),
+         "end_time": time(hour=23, minute=59)}},
     {"preference_type": "BookableHoursPreference",
      "preference_name": "hangout time",
      "event_type": "hangout",
      "attributes": {
-         "start": time(hour=0, minute=0),
-         "end": time(hour=23, minute=59)}},
+         "start_time": time(hour=0, minute=0),
+         "end_time": time(hour=23, minute=59)}},
     {"preference_type": "BookableHoursPreference",
      "preference_name": "call time",
      "event_type": "call",
      "attributes": {
-         "start": time(hour=8, minute=30),
-         "end": time(hour=18, minute=0)}},
+         "start_time": time(hour=8, minute=30),
+         "end_time": time(hour=18, minute=0)}},
     {"preference_type": "BookableHoursPreference",
      "preference_name": "meeting time",
      "event_type": "meeting",
      "attributes": {
-         "start": time(hour=8, minute=30),
-         "end": time(hour=18, minute=0)}}
+         "start_time": time(hour=8, minute=30),
+         "end_time": time(hour=18, minute=0)}}
 ]
 
 # RETHINKDB SETTINGS

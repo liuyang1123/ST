@@ -12,7 +12,8 @@ class CalendarDBClient():
         try:
             request = requests.get(self.CALENDAR_URL + 'c/' + self.CLIENT_ID + '/u/' +
                                    '554-586-725/events/' + str(pk) + '/')
-            return request.json()
+            if request.status_code == 200:
+                return request.json()[0]
         except requests.exceptions.RequestException as e:
             pass
         return None
@@ -27,12 +28,13 @@ class CalendarDBClient():
             pass
         return None
 
-    def update_event(self, pk, document):
+    def update_event(self, user_id, pk, document):
         try:
-            request = requests.put(self.CALENDAR_URL + self.CLIENT_ID + '/' +
-                                   user_id + '/events/' + pk + '/',
+            request = requests.put(self.CALENDAR_URL + 'c/' + self.CLIENT_ID +
+                                   '/u/' + str(user_id) + '/events/' + str(pk) + '/',
                                    data=document)
-            return True
+            if request.status_code == 200:
+                return True
         except requests.exceptions.RequestException as e:
             pass
         return False

@@ -7,15 +7,37 @@ from .unique_per_day_rule import UniquePerDayRule
 
 class RulesManager:
 
-    def is_valid(self, event):
+    def __init__(self):
         r1 = CheckInformationDisclosureRule()
         r2 = LiveEventRule()
         r3 = ModeOfCommunicationRule()
         r4 = OverlappingRule()
         r5 = UniquePerDayRule()
+        self.rules = [r1, r2, r3, r4, r5]
+        self.invalid_rules = []
 
-        # TODO Use rule solutions
+    def is_valid(self, event):
+        val = True
+        self.invalid_rules = []
+        for rule in self.rules:
+            re = rule.valid(event)
+            val = val and re
+            if not re:
+                self.invalid_rules.append(rule)
 
-        return (r1.valid(event) and r2.valid(event) and
-                r3.valid(event) and r4.valid(event) and
-                r5.valid(event))
+        return val
+
+    def has_possible_solution(self, event):
+        val = False
+        for rule in self.invalid_rules:
+            val = val or rule.has_possible_solution(event)
+
+        return val
+
+    def possible_solution(self, event):
+        resulting_event = event
+        for rule in self.invalid_rules:
+            if not rule.valid(resulting_event) and rule.has_possible_solution(resulting_event):
+                resulting_event = rule.possible_solution(resulting_event)
+
+        return resulting_event
