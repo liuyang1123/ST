@@ -105,8 +105,12 @@ print("")
 user_data = None
 print("=== LIST USERS ===")
 try:
-    request = requests.get("http://127.0.0.1:8000/api/v1/" + new_application['client_id'] + '/users/',
-                           headers={'Authorization': request_token})
+    request = requests.get(
+        "http://127.0.0.1:8000/api/v1/" +
+        new_application['client_id'] +
+        '/users/',
+        headers={
+            'Authorization': request_token})
     print("- Status code -")
     print(request.status_code)
     print("- JSON -")
@@ -147,8 +151,12 @@ except requests.exceptions.RequestException as e:
 
 print("=== RETRIVE CALENDAR ===")
 try:
-    request = requests.get("http://127.0.0.1:8001/api/v1/calendars/" + calendar_id + '/',
-                           headers={'Authorization': token_del_nuevo_user1})
+    request = requests.get(
+        "http://127.0.0.1:8001/api/v1/calendars/" +
+        calendar_id +
+        '/',
+        headers={
+            'Authorization': token_del_nuevo_user1})
     print("- Status code -")
     print(request.status_code)
     print("- JSON -")
@@ -159,10 +167,15 @@ except requests.exceptions.RequestException as e:
 
 print("=== UPDATE CALENDAR ===")
 try:
-    request = requests.put("http://127.0.0.1:8001/api/v1/calendars/" + calendar_id + '/',
-                           headers={'Authorization': token_del_nuevo_user1},
-                           data={"provider_name": "apple",
-                                 "calendar_name": "Home"})
+    request = requests.put(
+        "http://127.0.0.1:8001/api/v1/calendars/" +
+        calendar_id +
+        '/',
+        headers={
+            'Authorization': token_del_nuevo_user1},
+        data={
+            "provider_name": "apple",
+            "calendar_name": "Home"})
     print("- Status code -")
     print(request.status_code)
     print("- JSON -")
@@ -174,10 +187,17 @@ except requests.exceptions.RequestException as e:
 
 print("=== CREATE NEW EVENT ===")
 try:
-    request = requests.post("http://127.0.0.1:8001/api/v1/" + calendar_id + '/events/',
-                            headers={'Authorization': token_del_nuevo_user1},
-                            data={"location": "Board room",
-                                  "attendees": ["alexspecter@nabulabs.com", "a2@gmail.com"]})
+    request = requests.post(
+        "http://127.0.0.1:8001/api/v1/" +
+        calendar_id +
+        '/events/',
+        headers={
+            'Authorization': token_del_nuevo_user1},
+        data={
+            "location": "Board room",
+            "attendees": [
+                "alexspecter@nabulabs.com",
+                "a2@gmail.com"]})
     print("- Status code -")
     print(request.status_code)
     print("- JSON -")
@@ -195,8 +215,12 @@ f.close()
 
 print("=== LIST EVENTS ===")
 try:
-    request = requests.get("http://127.0.0.1:8001/api/v1/" + calendar_id + '/events/',
-                           headers={'Authorization': token_del_nuevo_user1})
+    request = requests.get(
+        "http://127.0.0.1:8001/api/v1/" +
+        calendar_id +
+        '/events/',
+        headers={
+            'Authorization': token_del_nuevo_user1})
     print("- Status code -")
     print(request.status_code)
     print("- JSON -")
@@ -208,8 +232,12 @@ except requests.exceptions.RequestException as e:
 
 print("=== RETRIVE EVENT ===")
 try:
-    request = requests.get("http://127.0.0.1:8001/api/v1/calendars/" + calendar_id + '/',
-                           headers={'Authorization': token_del_nuevo_user1})
+    request = requests.get(
+        "http://127.0.0.1:8001/api/v1/calendars/" +
+        calendar_id +
+        '/',
+        headers={
+            'Authorization': token_del_nuevo_user1})
     print("- Status code -")
     print(request.status_code)
     print("- JSON -")
@@ -220,10 +248,15 @@ except requests.exceptions.RequestException as e:
 
 print("=== UPDATE EVENT ===")
 try:
-    request = requests.put("http://127.0.0.1:8001/api/v1/calendars/" + calendar_id + '/',
-                           headers={'Authorization': token_del_nuevo_user1},
-                           data={"provider_name": "apple",
-                                 "calendar_name": "Home"})
+    request = requests.put(
+        "http://127.0.0.1:8001/api/v1/calendars/" +
+        calendar_id +
+        '/',
+        headers={
+            'Authorization': token_del_nuevo_user1},
+        data={
+            "provider_name": "apple",
+            "calendar_name": "Home"})
     print("- Status code -")
     print(request.status_code)
     print("- JSON -")
@@ -234,8 +267,12 @@ except requests.exceptions.RequestException as e:
 
 print("=== DELETE EVENT ===")
 try:
-    request = requests.delete("http://127.0.0.1:8001/api/v1/calendars/" + calendar_id + '/',
-                              headers={'Authorization': token_del_nuevo_user1})
+    request = requests.delete(
+        "http://127.0.0.1:8001/api/v1/calendars/" +
+        calendar_id +
+        '/',
+        headers={
+            'Authorization': token_del_nuevo_user1})
     print("- Status code -")
     print(request.status_code)
     print("- JSON -")
@@ -247,8 +284,12 @@ except requests.exceptions.RequestException as e:
 
 print("=== DELETE CALENDAR ===")
 try:
-    request = requests.delete("http://127.0.0.1:8001/api/v1/calendars/" + calendar_id + '/',
-                              headers={'Authorization': token_del_nuevo_user1})
+    request = requests.delete(
+        "http://127.0.0.1:8001/api/v1/calendars/" +
+        calendar_id +
+        '/',
+        headers={
+            'Authorization': token_del_nuevo_user1})
     print("- Status code -")
     print(request.status_code)
     print("- JSON -")

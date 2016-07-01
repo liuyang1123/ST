@@ -5,7 +5,8 @@ from api.config import SLOT_SIZE
 
 # TODO Transfer this to calendar_client
 
-class TimeSlot(object): # Python 2
+
+class TimeSlot(object):  # Python 2
     _start = None
     _end = None
 
@@ -26,7 +27,7 @@ class TimeSlot(object): # Python 2
         self._end = end
 
 
-class TimeSlotManager(object): # Python 2
+class TimeSlotManager(object):  # Python 2
     """
     """
 
@@ -37,7 +38,8 @@ class TimeSlotManager(object): # Python 2
 
         self._iterator = 0
         self.number_of_slots = duration / SLOT_SIZE
-        self.slot_delta = timedelta(minutes=SLOT_SIZE)  # 5 Min = size of one slot
+        self.slot_delta = timedelta(
+            minutes=SLOT_SIZE)  # 5 Min = size of one slot
         self.duration_delta = self.number_of_slots * self.slot_delta
         self.day_delta = timedelta(days=1)
         self.are_more_days_to_query = False
@@ -61,16 +63,19 @@ class TimeSlotManager(object): # Python 2
 
         start = datetime.combine(self._start_period,
                                  datetime.min.time())
-        end = datetime.combine(self._start_period, datetime.min.time()) + self.duration_delta
+        end = datetime.combine(
+            self._start_period,
+            datetime.min.time()) + self.duration_delta
         max_datetime = None
 
         if self._start_period + self.day_delta <= self._end_period:
-            # To make this more efficient, it will only query one day at a time.
+            # To make this more efficient, it will only query one day at a
+            # time.
             busy_space = self._db_client.free_busy(
                 self._user_id, self._start_period,
                 self._start_period + self.day_delta)
-            max_datetime = datetime.combine(self._start_period + self.day_delta,
-                                            datetime.min.time())
+            max_datetime = datetime.combine(
+                self._start_period + self.day_delta, datetime.min.time())
             self._start_period = self._start_period + self.day_delta
             self.are_more_days_to_query = True
         else:
@@ -103,7 +108,8 @@ class TimeSlotManager(object): # Python 2
         return result
 
     def has_next(self):
-        return (self._iterator < len(self._time_slots)) or self.are_more_days_to_query
+        return (self._iterator < len(self._time_slots)
+                ) or self.are_more_days_to_query
 
     def next(self):
         result = None

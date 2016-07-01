@@ -4,18 +4,20 @@ from api.learning_module.hard_constraints.preferences.manager import UserPrefere
 from api.learning_module.soft_constraints.bayesian_network import BayesianNetworkModel
 from api.event_module.calendar_client import CalendarDBClient
 
+
 class Attendee:
 
-    def __init__(self, email=None, user_id=None, sc_model=BayesianNetworkModel):
+    def __init__(self, email=None, user_id=None,
+                 sc_model=BayesianNetworkModel):
         self.user_id = None
         self._preferences = []
         self._soft_constraints = None
         if email is not None:
             request = requests.post(USER_SERVICE_BASE_URL +
-                                         'api/v1/' +
-                                         US_CLIENT_ID +
-                                         '/users/get_user_by_email/',
-                                         data={"email": email})
+                                    'api/v1/' +
+                                    US_CLIENT_ID +
+                                    '/users/get_user_by_email/',
+                                    data={"email": email})
             if request.status_code == 200:
                 self.user_id = request.json().get('user_id', None)
 
@@ -24,8 +26,8 @@ class Attendee:
 
         if self.user_id is not None:
             self._preferences = self._retrieve_preferences()
-            self._soft_constraints = sc_model(self.user_id)
-            self._soft_constraints.build_model()
+            # self._soft_constraints = sc_model(self.user_id)
+            # self._soft_constraints.build_model()
 
     def __str__(self):
         return str(self.user_id)
@@ -77,11 +79,6 @@ class Attendee:
     def cleanup(self):
         if self._soft_constraints is not None:
             self._soft_constraints.close()
-
-
-
-
-
 
     def get_location_city(self, datetime_val):
         # TODO Returns the city where the user will be at datetime_val

@@ -79,6 +79,7 @@ class ScheduleViewSet(viewsets.ViewSet):
 
         return Response({"message": "Deleted."}, status=status.HTTP_200_OK)
 
+
 class InvitationViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
 
@@ -138,7 +139,7 @@ class BNTrainingView(viewsets.ViewSet):
         user_id = decoded_token['user_id']
 
         # TODO Do this as a Celery task
-        datasets_bn = read_data_sets_bn(user_id)
+        datasets_bn = read_data_sets(user_id, False)
         bn = BayesianNetworkModel(user_id)
         bn.build_model()
         data, labels = datasets_bn.train.next_batch()

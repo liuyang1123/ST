@@ -76,10 +76,9 @@ class UserAdmin(BaseUserAdmin):
     # overrides get_fieldsets to use this attribute when creating a user.
     add_fieldsets = (
         (None, {
-            'classes': ('wide',),
-            'fields': ('email', 'first_name', 'last_name', 'default_tzid', 'password1', 'password2')}
-         ),
-    )
+            'classes': (
+                'wide',), 'fields': (
+                'email', 'first_name', 'last_name', 'default_tzid', 'password1', 'password2')}), )
     search_fields = ('email',)
     ordering = ('email',)
     filter_horizontal = ()

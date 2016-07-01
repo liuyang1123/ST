@@ -23,6 +23,17 @@ EVENT_TYPES_DICT = {
                 "is_live": True}
 }
 
+TRAIN_EVENT_TYPES_DICT = {
+    "call": 0,
+    "appointment": 1,
+    "breakfast": 2,
+    "lunch": 3,
+    "dinner": 4,
+    "hangout": 5,
+    "travel": 6,
+    "meeting": 7
+}
+
 DEFAULT_EVENT_TYPE = "meeting"
 
 EVENT_TYPES = ["call", "appointment", "breakfast", "lunch",

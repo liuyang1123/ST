@@ -115,7 +115,7 @@ class UserPreferencesManager:
                 pref(preference_name=o.get("preference_name", ""),
                      event_type=o.get("event_type", ""),
                      args=args)
-                )
+            )
 
         return preferences
 

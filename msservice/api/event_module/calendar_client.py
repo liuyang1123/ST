@@ -10,8 +10,14 @@ class CalendarDBClient():
 
     def get_event(self, pk):
         try:
-            request = requests.get(self.CALENDAR_URL + 'c/' + self.CLIENT_ID + '/u/' +
-                                   '554-586-725/events/' + str(pk) + '/')
+            request = requests.get(
+                self.CALENDAR_URL +
+                'c/' +
+                self.CLIENT_ID +
+                '/u/' +
+                '554-586-725/events/' +
+                str(pk) +
+                '/')
             if request.status_code == 200:
                 return request.json()[0]
         except requests.exceptions.RequestException as e:
@@ -20,9 +26,13 @@ class CalendarDBClient():
 
     def add_event(self, token, document):
         try:
-            request = requests.post(self.CALENDAR_URL + document['calendar_id'] + '/events/',
-                                    headers={'Authorization': token},
-                                    data=document)
+            request = requests.post(
+                self.CALENDAR_URL +
+                document['calendar_id'] +
+                '/events/',
+                headers={
+                    'Authorization': token},
+                data=document)
             return request.json()['data']['generated_keys'][0]
         except requests.exceptions.RequestException as e:
             pass
@@ -30,9 +40,16 @@ class CalendarDBClient():
 
     def update_event(self, user_id, pk, document):
         try:
-            request = requests.put(self.CALENDAR_URL + 'c/' + self.CLIENT_ID +
-                                   '/u/' + str(user_id) + '/events/' + str(pk) + '/',
-                                   data=document)
+            request = requests.put(
+                self.CALENDAR_URL +
+                'c/' +
+                self.CLIENT_ID +
+                '/u/' +
+                str(user_id) +
+                '/events/' +
+                str(pk) +
+                '/',
+                data=document)
             if request.status_code == 200:
                 return True
         except requests.exceptions.RequestException as e:
@@ -49,10 +66,16 @@ class CalendarDBClient():
 
     def free_busy(self, user_id, from_date, to_date):
         try:
-            request = requests.post(self.CALENDAR_URL + 'c/' + self.CLIENT_ID +
-                                    '/u/' + str(user_id) + '/events/free_busy/',
-                                    data={"from_date": from_date.isoformat(),
-                                          "to_date": to_date.isoformat()})
+            request = requests.post(
+                self.CALENDAR_URL +
+                'c/' +
+                self.CLIENT_ID +
+                '/u/' +
+                str(user_id) +
+                '/events/free_busy/',
+                data={
+                    "from_date": from_date.isoformat(),
+                    "to_date": to_date.isoformat()})
             return request.json()
         except requests.exceptions.RequestException as e:
             pass
@@ -60,8 +83,13 @@ class CalendarDBClient():
 
     def list_all_events(self, user_id):
         try:
-            request = requests.get(self.CALENDAR_URL + 'c/' + self.CLIENT_ID + '/u/' +
-                                   str(user_id) + '/events/events/')
+            request = requests.get(
+                self.CALENDAR_URL +
+                'c/' +
+                self.CLIENT_ID +
+                '/u/' +
+                str(user_id) +
+                '/events/events/')
             return request.json()
         except requests.exceptions.RequestException as e:
             pass
@@ -69,10 +97,16 @@ class CalendarDBClient():
 
     def available(self, user_id, from_date, to_date):
         try:
-            request = requests.post(self.CALENDAR_URL + 'c/' + self.CLIENT_ID + '/u/' +
-                                    str(user_id) + '/events/qavailable/',
-                                    data={"from_date": from_date.isoformat(),
-                                          "to_date": to_date.isoformat()})
+            request = requests.post(
+                self.CALENDAR_URL +
+                'c/' +
+                self.CLIENT_ID +
+                '/u/' +
+                str(user_id) +
+                '/events/qavailable/',
+                data={
+                    "from_date": from_date.isoformat(),
+                    "to_date": to_date.isoformat()})
 
             return request.json()['available']
         except requests.exceptions.RequestException as e:

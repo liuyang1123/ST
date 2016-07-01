@@ -14,8 +14,8 @@ class TokenAuthTestCase(TestCase):
 
     def test_get_token(self):
 
-        response = self.c.post(
-            "/api/v1/api-token-auth/", {"email": "joe@gmail.com", "password": "test"})
+        response = self.c.post("/api/v1/api-token-auth/",
+                               {"email": "joe@gmail.com", "password": "test"})
 
         assert 200 == response.status_code, "Response is 200 OK"
         assert json.loads(response.content.decode('utf-8')

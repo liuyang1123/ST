@@ -11,6 +11,7 @@ from api.event_module.event_type import EventType
 # TODO Improve the usage of task / schedule statuses.
 # TODO Use a tentative event model instead of calling the CS?
 
+
 class SchedulingTask(models.Model):
     TASK_TYPES = (
         ('schedule', 'schedule'),
@@ -58,13 +59,13 @@ class SchedulingTask(models.Model):
                 event_json = event_json
 
                 # Get the valid range to schedule the event
-                start = event_json.get('start', None) # Si es None -> Tomorrow
-                if start is not None and start!='':
+                start = event_json.get('start', None)  # Si es None -> Tomorrow
+                if start is not None and start != '':
                     start = parse(start)
                 else:
                     start = date.today() + timedelta(days=1)
-                end = event_json.get('end', None) # Si es None +15 days
-                if end is not None and end!='':
+                end = event_json.get('end', None)  # Si es None +15 days
+                if end is not None and end != '':
                     end = parse(end)
                 else:
                     end = date.today() + timedelta(days=7)
@@ -76,7 +77,9 @@ class SchedulingTask(models.Model):
                 for email in event_json.get('attendees', []):
                     attendee = Attendee(email=email.replace(" ", ""))
                     participants.append(attendee)
-                participants.append(Attendee(user_id=event_json.get('user_id')))
+                participants.append(
+                    Attendee(
+                        user_id=event_json.get('user_id')))
 
                 e_type = EVENT_TYPES_DICT.get(
                     str(event_json.get("categories",
@@ -110,6 +113,7 @@ class SchedulingTask(models.Model):
         # TODO: if schedule status == 'tentative' then update tentative_time
         # value
 
+
 class Training(models.Model):
     user_id = models.CharField(max_length=50)
     event_type = models.CharField(max_length=30)
@@ -120,6 +124,7 @@ class Training(models.Model):
     feedback = models.BooleanField(default=False)
     # participants
     # location
+
 
 class Invitation(models.Model):
     task = models.ForeignKey(SchedulingTask)
@@ -134,13 +139,13 @@ class Invitation(models.Model):
             event = self.task.get_event()
 
             if not self.decision:
-                # TODO save the event as negative sampling
-                t = Training(user_id = self.attendee,
-                             event_type = event.get("categories"),
-                             start = parse(event.get("start")),
-                             end = parse(event.get("end")),
-                             duration = int(event.get("duration")),
-                             feedback = False)
+                # Save the event as negative sampling
+                t = Training(user_id=self.attendee,
+                             event_type=event.get("categories"),
+                             start=parse(event.get("start")),
+                             end=parse(event.get("end")),
+                             duration=int(event.get("duration")),
+                             feedback=False)
                 t.save()
             else:
                 invitations = Invitation.objects.filter(task=self.task)
@@ -161,13 +166,15 @@ class Invitation(models.Model):
                         # TODO Remove this training example
                         pass
                     else:
-                        # TODO Initiate a rescheduling process, call the best_slots with the invalid parameter
+                        # TODO Initiate a rescheduling process, call the
+                        # best_slots with the invalid parameter
                         pass
-                # TODO Figure out if it would be a good idea to create training data from this.
-                t = Training(user_id = self.attendee,
-                             event_type = event.get("categories"),
-                             start = parse(event.get("start")),
-                             end = parse(event.get("end")),
-                             duration = int(event.get("duration")),
-                             feedback = True)
+                # TODO Figure out if it would be a good idea to create training
+                # data from this.
+                t = Training(user_id=self.attendee,
+                             event_type=event.get("categories"),
+                             start=parse(event.get("start")),
+                             end=parse(event.get("end")),
+                             duration=int(event.get("duration")),
+                             feedback=True)
                 t.save()

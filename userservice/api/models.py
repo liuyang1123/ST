@@ -107,7 +107,10 @@ class Profile(models.Model):
         editable=False)
     contact_number = models.CharField(max_length=20)
     status_message = models.CharField(
-        max_length=144, help_text='Twitter style status message', blank=True, null=True)
+        max_length=144,
+        help_text='Twitter style status message',
+        blank=True,
+        null=True)
     bio = models.TextField(blank=True, null=True)
 
 
@@ -166,8 +169,11 @@ class Application(models.Model):
     logo = models.FileField(null=True, blank=True)
     client_id = models.CharField(max_length=100, unique=True,
                                  default=generate_client_id, db_index=True)
-    client_secret = models.CharField(max_length=255, blank=True,
-                                     default=generate_client_secret, db_index=True)
+    client_secret = models.CharField(
+        max_length=255,
+        blank=True,
+        default=generate_client_secret,
+        db_index=True)
 
     def __str__(self):
         return self.name or self.client_id

@@ -1,7 +1,7 @@
 import json
 from pomegranate import *
 from .soft_constraints_model import SoftConstraintsModel
-from api.config import SLOT_SIZE
+from api.config import SLOT_SIZE, SLOTS_PER_HOUR
 
 
 types_opt = ['breakfast', 'lunch', 'dinner',
@@ -17,7 +17,7 @@ place_opt = ['Home', 'Office', 'X']
 
 participate_opt = [False, True]
 
-total_number_of_timeslots = (60 / SLOT_SIZE) * 24  # Slots per hour * total hours
+total_number_of_timeslots = SLOTS_PER_HOUR * 24  # Slots per hour * total hours
 
 
 class BayesianNetworkModel(SoftConstraintsModel):
@@ -61,7 +61,7 @@ class BayesianNetworkModel(SoftConstraintsModel):
     def score_event(self, event):
         hour = event.start_time.time().hour
         minute = event.start_time.time().minute
-        time = hour * 12 + minute / SLOT_SIZE
+        time = hour * SLOTS_PER_HOUR + minute / SLOT_SIZE
 
         args = {"type": str(event.event_type),
                 "duration": event.duration,

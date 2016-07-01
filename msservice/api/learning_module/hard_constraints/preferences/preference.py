@@ -7,7 +7,7 @@ DISTANCE = "distance"
 MODE_OF_COMMUNICATION = "ModeOfCommunicationPreference"
 
 
-class Preference(object): # Python 2
+class Preference(object):  # Python 2
     """
     Clase padre
     """
@@ -36,7 +36,12 @@ class Preference(object): # Python 2
 class BookableHoursPreference(Preference):
 
     def __init__(self, preference_name, event_type=ANY, args=dict()):
-        super(BookableHoursPreference, self).__init__(preference_name, event_type, args)
+        super(
+            BookableHoursPreference,
+            self).__init__(
+            preference_name,
+            event_type,
+            args)
         # super().__init__(preference_name, event_type, args)
         self.start = args.get(START_TIME, None)
         self.end = args.get(END_TIME, None)
@@ -55,7 +60,12 @@ class BookableHoursPreference(Preference):
 class DoNotDisturbPreference(Preference):
 
     def __init__(self, preference_name, event_type=ANY, args=dict()):
-        super(DoNotDisturbPreference, self).__init__(preference_name, event_type, args)
+        super(
+            DoNotDisturbPreference,
+            self).__init__(
+            preference_name,
+            event_type,
+            args)
         # super().__init__(preference_name, event_type, args)
         self.start = args.get(START_TIME, None)
         self.end = args.get(END_TIME, None)
@@ -74,7 +84,12 @@ class DoNotDisturbPreference(Preference):
 class DurationPreference(Preference):
 
     def __init__(self, preference_name, event_type=ANY, args=dict()):
-        super(DurationPreference, self).__init__(preference_name, event_type, args)
+        super(
+            DurationPreference,
+            self).__init__(
+            preference_name,
+            event_type,
+            args)
         # super().__init__(preference_name, event_type, args)
         self.duration = args.get(DURATION, None)
         self.preference_type = "DurationPreference"
@@ -93,7 +108,12 @@ class TimeBetweenPreference(Preference):
     # after a certain time
 
     def __init__(self, preference_name, event_type=ANY, args=dict()):
-        super(TimeBetweenPreference, self).__init__(preference_name, event_type, args)
+        super(
+            TimeBetweenPreference,
+            self).__init__(
+            preference_name,
+            event_type,
+            args)
         # super().__init__(preference_name, event_type, args)
         self.duration = args.get(DURATION, None)
         self.preference_type = "TimeBetweenPreference"
@@ -119,7 +139,12 @@ class MaxDistancePreference(Preference):
 
     def __init__(self, preference_name, event_type=ANY, args=dict()):
         # super().__init__(preference_name, event_type, args)
-        super(MaxDistancePreference, self).__init__(preference_name, event_type, args)
+        super(
+            MaxDistancePreference,
+            self).__init__(
+            preference_name,
+            event_type,
+            args)
         self.distance = args.get(DISTANCE, None)
         self.preference_type = "MaxDistancePreference"
 
@@ -140,7 +165,12 @@ class MaxDistancePreference(Preference):
 class ModeOfCommunicationPreference(Preference):
 
     def __init__(self, preference_name, event_type=ANY, args=dict()):
-        super(ModeOfCommunicationPreference, self).__init__(preference_name, event_type, args)
+        super(
+            ModeOfCommunicationPreference,
+            self).__init__(
+            preference_name,
+            event_type,
+            args)
         # super().__init__(preference_name, event_type, args)
         # This should be a vector with probabilities.
         self.mode = args.get(MODE_OF_COMMUNICATION, None)

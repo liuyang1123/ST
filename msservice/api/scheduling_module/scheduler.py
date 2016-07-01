@@ -6,6 +6,7 @@ from api.event_module.calendar_client import CalendarDBClient
 
 # TODO Add the specific timezone to the datetimes. Right now is empty.
 
+
 class Scheduler:
 
     def __init__(self, list_of_events, tasks=None):
@@ -38,17 +39,11 @@ class Scheduler:
 
             Invalid are timeslots rejected by a user. Used in order to not choose the same options.
         """
-# TODO (1) Figure out if it's possible or better to make a query that selects all the corresponding slots for all users at the same time
-# TODO (2) Enable re-scheduling
-# TODO (3) Make more efficient the get_available_slots so that it doesn't query the database if it's is in the same range of time
-# TODO (4) Recommend a place if not one is given. If we are in an
-# office context, that location should be one of the free rooms.
-# Look for yelp. And historic data.
         hc = RulesManager()
 
         duration = event.duration
         if duration == -1:
-            duration = 30 # TODO infer
+            duration = 30  # TODO infer
         ts_manager = TimeSlotManager(user_id=event.participants[-1].user_id,
                                      start_period=event.start_time,
                                      end_period=event.end_time,
@@ -73,7 +68,6 @@ class Scheduler:
             event_to_schedule.start_time = slot.get_start()
             event_to_schedule.end_time = slot.get_end()
 
-            # TODO Use the rules possible_solution method
             if hc.is_valid(event_to_schedule) == 1:
                 pref_score = 0.0
                 sc_score = 0.0
@@ -88,26 +82,24 @@ class Scheduler:
                 slots_score[j] = alpha * pref_score + beta * sc_score
                 j += 1
                 # TODO  Break the loop.
-                #       Right now it's going to analyze 15 days. Infer the best day.
+                # Right now it's going to analyze 15 days. Infer the best day.
             else:
-                print("No valido")
                 if hc.has_possible_solution(event_to_schedule):
                     event_to_schedule = hc.possible_solution(event_to_schedule)
                     rule_modifier = True
                     ts_manager.change_start_period(event_to_schedule.date())
             if not ts_manager.has_next() and len(slots_score.keys()) == 0:
-                print("Entra aca!")
                 ts_manager.change_start_period(slot.get_end())
 
-        ids_sorted_by_constraints = sorted(slots_score,
-                                           key=slots_score.get,
-                                           reverse=True)[:k]  # Sort and get the top k slots
+        ids_sorted_by_constraints = sorted(
+            slots_score, key=slots_score.get, reverse=True)[
+            :k]  # Sort and get the top k slots
         # print("IDs sorted by constraints:")
         # for r in ids_sorted_by_constraints:
         #     print(slots[r])
 
         result = []
-        if k>1:
+        if k > 1:
             for r in ids_sorted_by_constraints:
                 result.append(slots[r])
         else:

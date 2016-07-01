@@ -312,8 +312,12 @@ print("")
 user_data = None
 print("=== LIST USERS ===")
 try:
-    request = requests.get("http://127.0.0.1:8000/api/v1/" + new_application['client_id'] + '/users/',
-                           headers={'Authorization': refreshed_token})
+    request = requests.get(
+        "http://127.0.0.1:8000/api/v1/" +
+        new_application['client_id'] +
+        '/users/',
+        headers={
+            'Authorization': refreshed_token})
     print("- Status code -")
     print(request.status_code)
     print("- JSON -")
@@ -327,8 +331,12 @@ print("")
 
 print("=== LIST USERS ===")
 try:
-    request = requests.get("http://127.0.0.1:8000/api/v1/" + new_application['client_id'] + '/users/',
-                           headers={'Authorization': token_del_nuevo_user1})
+    request = requests.get(
+        "http://127.0.0.1:8000/api/v1/" +
+        new_application['client_id'] +
+        '/users/',
+        headers={
+            'Authorization': token_del_nuevo_user1})
     print("- Status code -")
     print(request.status_code)
     print("- JSON -")
@@ -389,8 +397,14 @@ except requests.exceptions.RequestException as e:
 
 print("=== DELETE USERS ===")
 try:
-    request = requests.delete("http://127.0.0.1:8000/api/v1/" + new_application['client_id'] + '/users/' + user_data[1]['profile']['profile_id'] + '/',
-                              headers={'Authorization': token_del_nuevo_user1})
+    request = requests.delete(
+        "http://127.0.0.1:8000/api/v1/" +
+        new_application['client_id'] +
+        '/users/' +
+        user_data[1]['profile']['profile_id'] +
+        '/',
+        headers={
+            'Authorization': token_del_nuevo_user1})
     print("- Status code -")
     print(request.status_code)
 except requests.exceptions.RequestException as e:
@@ -401,9 +415,17 @@ print("")
 
 print("=== UPDATE USERS ===")
 try:
-    request = requests.patch("http://127.0.0.1:8000/api/v1/" + new_application['client_id'] + '/users/' + user_data[0]['profile']['profile_id'] + '/',
-                             headers={'Authorization': token_del_nuevo_user2},
-                             data={"first_name": "656464343", })
+    request = requests.patch(
+        "http://127.0.0.1:8000/api/v1/" +
+        new_application['client_id'] +
+        '/users/' +
+        user_data[0]['profile']['profile_id'] +
+        '/',
+        headers={
+            'Authorization': token_del_nuevo_user2},
+        data={
+            "first_name": "656464343",
+        })
     print("- Status code -")
     print(request.status_code)
 except requests.exceptions.RequestException as e:
@@ -415,8 +437,14 @@ print("")
 
 print("=== RETRIVE PROFILES OWNER ===")
 try:
-    request = requests.get("http://127.0.0.1:8000/api/v1/" + new_application['client_id'] + '/profiles/' + user_data[0]['profile']['profile_id'] + '/',
-                           headers={'Authorization': refreshed_token})
+    request = requests.get(
+        "http://127.0.0.1:8000/api/v1/" +
+        new_application['client_id'] +
+        '/profiles/' +
+        user_data[0]['profile']['profile_id'] +
+        '/',
+        headers={
+            'Authorization': refreshed_token})
     print("- Status code -")
     print(request.status_code)
     print("- JSON -")
@@ -444,9 +472,17 @@ print("")
 
 print("=== UPDATE PROFILE ===")
 try:
-    request = requests.patch("http://127.0.0.1:8000/api/v1/" + new_application['client_id'] + '/profiles/' + user_data[0]['profile']['profile_id'] + '/',
-                             headers={'Authorization': token_del_nuevo_user2},
-                             data={"bio": "qwertyuiasdfgh", })
+    request = requests.patch(
+        "http://127.0.0.1:8000/api/v1/" +
+        new_application['client_id'] +
+        '/profiles/' +
+        user_data[0]['profile']['profile_id'] +
+        '/',
+        headers={
+            'Authorization': token_del_nuevo_user2},
+        data={
+            "bio": "qwertyuiasdfgh",
+        })
     print("- Status code -")
     print(request.status_code)
 except requests.exceptions.RequestException as e:

@@ -163,11 +163,16 @@ except requests.exceptions.RequestException as e:
 
 print("=== CREATE NEW EVENT ===")
 try:
-    request = requests.post("http://127.0.0.1:9000/api/v1/scheduling/",
-                            headers={'Authorization': token_del_nuevo_user1},
-                            data={"calendar_id": calendar_id,
-                                  "location": "Board room",
-                                  "attendees": ["alexspecter@nabulabs.com", "a2@gmail.com"]})
+    request = requests.post(
+        "http://127.0.0.1:9000/api/v1/scheduling/",
+        headers={
+            'Authorization': token_del_nuevo_user1},
+        data={
+            "calendar_id": calendar_id,
+            "location": "Board room",
+            "attendees": [
+                "alexspecter@nabulabs.com",
+                "a2@gmail.com"]})
     print("- Status code -")
     print(request.status_code)
     print("- JSON -")

@@ -37,7 +37,8 @@ class RulesManager:
     def possible_solution(self, event):
         resulting_event = event
         for rule in self.invalid_rules:
-            if not rule.valid(resulting_event) and rule.has_possible_solution(resulting_event):
+            if not rule.valid(resulting_event) and rule.has_possible_solution(
+                    resulting_event):
                 resulting_event = rule.possible_solution(resulting_event)
 
         return resulting_event

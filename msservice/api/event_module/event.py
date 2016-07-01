@@ -1,6 +1,7 @@
 from api.config import SLOT_SIZE
 
-class Event(object): # Python 2
+
+class Event(object):  # Python 2
 
     def __init__(self, participants, event_type=None, description=None,
                  duration=None, start_time=None, end_time=None, location=None):
@@ -86,6 +87,6 @@ class Event(object): # Python 2
         _d2 = d2.hour * 12 + d2.minute / SLOT_SIZE
         m1 = max(_x1, _d1)
         m2 = max(_x2, _d2)
-        dist = -abs(_x1-_d1)/m1 - abs(_x2-_d2)/m2
+        dist = -abs(_x1 - _d1) / m1 - abs(_x2 - _d2) / m2
 
         return dist
