@@ -17,14 +17,14 @@ from django.conf.urls import url, include
 from django.contrib import admin
 from rest_framework_jwt.views import obtain_jwt_token, verify_jwt_token, refresh_jwt_token
 from django.views.generic import RedirectView
-from api.views import router, RegistrationView, UserView, AllUsersView
+from api.views import router, RegistrationView, GetTokenView, UserView, AllUsersView
 
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
 
     url(r'^auth/register/', RegistrationView.as_view()),
-    url(r'^auth/token/', obtain_jwt_token),
+    url(r'^auth/token/', GetTokenView.as_view()),
     url(r'^auth/refresh/', refresh_jwt_token),
     url(r'^auth/verify/', verify_jwt_token),
 

@@ -187,6 +187,12 @@ class Event:
         inserted = self.event_table.insert(document).run(self.connection)
         return inserted
 
+    def delete_event_with_user_id(self, pk, user_id):
+        element = self.event_table.filter(
+            {'id': pk,
+             'user_id': user_id}).delete().run(self.connection)
+        return element
+
     def delete_event(self, calendar_id, pk):
         element = self.event_table.get(pk).run(self.connection)
         if element['calendar_id'] == calendar_id:

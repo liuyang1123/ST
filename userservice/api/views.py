@@ -9,6 +9,15 @@ from api.models import MyUser, Profile, Application, ApplicationUser  # , AppAut
 from api.serializers import UserSerializer, ProfileSerializer, ApplicationSerializer, ApplicationUserSerializer
 from api.utils import decode_token
 from api.permissions import IsAuthenticated, UserViewSetPermissions, ProfileViewSetPermissions
+from rest_framework.renderers import JSONRenderer
+from rest_framework_jwt.views import ObtainJSONWebToken
+
+class GetTokenView(ObtainJSONWebToken):
+    """
+    User registration
+    """
+    permission_classes = (AllowAny,)
+    renderer_classes = (JSONRenderer, )
 
 
 class RegistrationView(views.APIView):
@@ -16,6 +25,7 @@ class RegistrationView(views.APIView):
     User registration
     """
     permission_classes = (AllowAny,)
+    renderer_classes = (JSONRenderer, )
 
     def post(self, request, *args):
         serializer = UserSerializer(data=request.data)
@@ -30,7 +40,7 @@ class RegistrationView(views.APIView):
             return Response({"token": token}, status=status.HTTP_201_CREATED)
         else:
             return Response({
-                'data': serializer.errors,
+                'error': serializer.errors,
                 'message': 'User could not be created with the received data.'
             }, status=status.HTTP_400_BAD_REQUEST)
 

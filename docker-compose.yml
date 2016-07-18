@@ -40,20 +40,22 @@ csweb:
 #  ports:
 #    - "5672:5672"
 #    - "15672:15672"
+
 mspostgres:
   restart: always
   image: postgres
-msweb:
-  restart: always
-  build: ./msservice
-  command: bash ./msservice/run_ms.sh
-  volumes:
-    - .:/app
-  ports:
-    - "9000:9000"
-  links:
-    - mspostgres:mspostgres
-    - rethinkdb
+#msweb:
+#  restart: always
+#  build: ./msservice
+#  command: bash ./msservice/run_ms.sh
+#  volumes:
+#    - .:/app
+#  ports:
+#    - "9000:9000"
+#  links:
+#    - mspostgres:mspostgres
+#    - rethinkdb
+
 #    - rabbitmq:rabbit
 #    - redis:redis
 #worker:

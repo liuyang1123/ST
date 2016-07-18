@@ -9,12 +9,14 @@ from api.utils import decode_token
 from api.permissions import IsAuthenticated
 from rest_framework.permissions import AllowAny
 from django.utils.timezone import now, timedelta
+from rest_framework.renderers import JSONRenderer
 
 
 # TODO Set a default Calendar so that there the calendar_id field is optional
 
 class CalendarViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
+    renderer_classes = (JSONRenderer, )
 
     def list(self, request):
         decoded_token = decode_token(request.META)
@@ -93,6 +95,7 @@ class CalendarViewSet(viewsets.ViewSet):
 
 class EventsViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
+    renderer_classes = (JSONRenderer, )
 
     def list(self, request, calendar_id):
         decoded_token = decode_token(request.META)
@@ -242,6 +245,7 @@ class EventsViewSet(viewsets.ViewSet):
 
 class QViewSet(viewsets.ViewSet):
     permission_classes = (AllowAny,)
+    renderer_classes = (JSONRenderer, )
 
     def is_valid(self, client_id, user_id):
         # TODO
@@ -336,6 +340,67 @@ class QViewSet(viewsets.ViewSet):
         return Response({"available": result}, status=status.HTTP_200_OK)
 
 
+class QEventViewSet(viewsets.ViewSet):
+    permission_classes = (IsAuthenticated,)
+    renderer_classes = (JSONRenderer,)
+
+    @list_route(methods=['post'])
+    def free_busy(self, request):
+        decoded_token = decode_token(request.META)
+
+        from_date = request.data.get('from_date',
+                                     (now() - timedelta(days=14)).isoformat())
+        to_date = request.data.get('to_date',
+                                   (now() + timedelta(days=14)).isoformat())
+
+        event = Event()
+        serializer = EventSerializer(
+            event.free_busy(int(decoded_token['user_id']), from_date, to_date),
+            many=True)
+        event.close()
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def destroy(self, request, pk=None):
+        decoded_token = decode_token(request.META)
+
+        event = Event()
+        deleted = event.delete_event_with_user_id(pk,
+                                                  int(decoded_token['user_id']))
+        event.close()
+
+        return Response({"data": deleted}, status=status.HTTP_200_OK)
+
+    def create(self, request):
+        decoded_token = decode_token(request.META)
+
+        serializer = EventSerializer(data=request.data)
+        if serializer.is_valid():
+            event = Event()
+
+            data = serializer.data
+            data['calendar_id'] = -1
+            data['created'] = now()
+            data['updated'] = now()
+            data['user_id'] = decoded_token['user_id']
+
+            inserted = event.insert_event(data)
+
+            result = {}
+            if inserted.get('inserted', 0) == 1:
+                e = EventSerializer(
+                    event.get_event_with_pk(inserted['generated_keys'][0]),
+                    many=True)
+                if len(e.data) > 0:
+                    result = e.data[0]
+
+            event.close()
+
+            return Response(result, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors)
+
+
 # Routers provide an easy way of automatically determining the URL conf.
 router = routers.DefaultRouter()
 router.register(
@@ -347,3 +412,7 @@ router.register(
     r'(?P<calendar_id>\S+)/events',
     EventsViewSet,
     base_name='events')
+router.register(
+    r'myevents',
+    QEventViewSet,
+    base_name='qevents')
