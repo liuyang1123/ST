@@ -3,6 +3,7 @@ from rest_framework import views, viewsets, status, routers
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework.decorators import list_route, detail_route
+from rest_framework.renderers import JSONRenderer
 from api.models import SchedulingTask, Invitation
 from api.permissions import IsAuthenticated
 from api.serializers import SchedulingTaskSerializer, EventSerializer, PreferenceSerializer, InvitationSerializer
@@ -288,6 +289,77 @@ class PreferenceViewSet(viewsets.ViewSet):
                         status=status.HTTP_201_CREATED)
 
 
+
+
+
+from api.witai import Wit
+
+wit_access_token = 'N3YY33JVMGXRJG7GKY3LA4BXUVXIFYCK'
+
+# Quickstart example
+# See https://wit.ai/ar7hur/Quickstart
+
+def first_entity_value(entities, entity):
+    if entity not in entities:
+        return None
+    val = entities[entity][0]['value']
+    if not val:
+        return None
+    return val['value'] if isinstance(val, dict) else val
+
+
+rsp = ""
+def send(request, response):
+    print("send")
+    rsp = response['text']
+    print(rsp)
+
+def schedule_event(request):
+    print("schedule_event")
+    print(request)
+    context = request['context']
+    entities = request['entities']
+
+    loc = first_entity_value(entities, 'location')
+
+    context['timeslot'] = "xxx"
+
+    return context
+
+actions = {
+    'send': send,
+    'scheduleEvent': schedule_event,
+}
+
+client = Wit(access_token=wit_access_token, actions=actions)
+
+class NlView(viewsets.ViewSet):
+    renderer_classes = (JSONRenderer, )
+
+    def create(self, request):
+        # Alternatives:
+        #  - Receive a new email
+        #  - Receive a message from the chat
+        print(request.data.get("text"))
+        import uuid
+        # d = client.converse(session_id=uuid.uuid1(),
+        #                     message=request.data.get("text"))
+        # print("converse")
+        # print(d)
+        d = client.run_actions(session_id=uuid.uuid1(),
+                               message=request.data.get("text"))
+        print("run_actions")
+        print(d)
+        print("rsp in create")
+        print(rsp)
+        return Response(d.get('msg'), status=status.HTTP_200_OK)
+
+
+
+
+
+
+
 # Routers provide an easy way of automatically determining the URL conf.
 router = routers.DefaultRouter()
 router.register(r'scheduling', ScheduleViewSet, base_name='scheduling')
@@ -295,6 +367,7 @@ router.register(r'invitation', InvitationViewSet, base_name='invitation')
 router.register(r'bayesiannetwork', BNTrainingView,
                 base_name='bayesiannetwork')
 router.register(r'preferences', PreferenceViewSet, base_name='preferences')
+router.register(r'messages', NlView, base_name='messages')
 # ModelViewSet:
 # router.register(r'scheduling-feed', SchedulingTasksViewSet,
 #                 base_name='scheduling_feed')
