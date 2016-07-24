@@ -117,15 +117,16 @@ class EventsViewSet(viewsets.ViewSet):
         calendar.close()
 
         if len(obj) < 1:
-            return Response({"message": "calendar_id does not exists."},
-                            status=status.HTTP_404_NOT_FOUND)
+            calendar_id = -1
+            #return Response({"message": "calendar_id does not exists."},
+            #                status=status.HTTP_404_NOT_FOUND)
 
         serializer = EventSerializer(data=request.data)
         if serializer.is_valid():
             event = Event()
 
             data = serializer.data
-            data['calendar_id'] = self.kwargs['calendar_id']
+            data['calendar_id'] = calendar_id
             data['created'] = now()
             data['updated'] = now()
             data['user_id'] = decoded_token['user_id']

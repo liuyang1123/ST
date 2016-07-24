@@ -108,6 +108,7 @@ class Scheduler:
         return result, duration
 
     def select_slot(self, k=1, alpha=1, beta=1):
+        result = []
         for i, event in enumerate(self.events):
             best_slot, duration = self.best_slots(event=event, k=1,
                                                   alpha=alpha, beta=beta)
@@ -116,9 +117,11 @@ class Scheduler:
             event.duration = duration
             # event.location =
             # TODO change task status
-
+            result.append(event)
             self._send_invitations(i, event)
 
+        return result
+        
     def _send_invitations(self, i, event):
         if self.tasks is not None:
             for attendee in event.participants:

@@ -22,38 +22,38 @@ DEFAULT_USER_PREFERENCES = [
      "preference_name": "breakfast time",
      "event_type": "breakfast",
      "attributes": {
-         "start_time": time(hour=7, minute=30),
-         "end_time": time(hour=11, minute=30)}},
+         "start_time": time(hour=7, minute=30).isoformat(),
+         "end_time": time(hour=11, minute=30).isoformat()}},
     {"preference_type": "BookableHoursPreference",
      "preference_name": "lunch time",
      "event_type": "lunch",
      "attributes": {
-         "start_time": time(hour=11, minute=30),
-         "end_time": time(hour=14, minute=30)}},
+         "start_time": time(hour=11, minute=30).isoformat(),
+         "end_time": time(hour=14, minute=30).isoformat()}},
     {"preference_type": "BookableHoursPreference",
      "preference_name": "dinner time",
      "event_type": "dinner",
      "attributes": {
-         "start_time": time(hour=16, minute=30),
-         "end_time": time(hour=23, minute=59)}},
+         "start_time": time(hour=16, minute=30).isoformat(),
+         "end_time": time(hour=23, minute=59).isoformat()}},
     {"preference_type": "BookableHoursPreference",
      "preference_name": "hangout time",
      "event_type": "hangout",
      "attributes": {
-         "start_time": time(hour=0, minute=0),
-         "end_time": time(hour=23, minute=59)}},
+         "start_time": time(hour=0, minute=0).isoformat(),
+         "end_time": time(hour=23, minute=59).isoformat()}},
     {"preference_type": "BookableHoursPreference",
      "preference_name": "call time",
      "event_type": "call",
      "attributes": {
-         "start_time": time(hour=8, minute=30),
-         "end_time": time(hour=18, minute=0)}},
+         "start_time": time(hour=8, minute=30).isoformat(),
+         "end_time": time(hour=18, minute=0).isoformat()}},
     {"preference_type": "BookableHoursPreference",
      "preference_name": "meeting time",
      "event_type": "meeting",
      "attributes": {
-         "start_time": time(hour=8, minute=30),
-         "end_time": time(hour=18, minute=0)}}
+         "start_time": time(hour=8, minute=30).isoformat(),
+         "end_time": time(hour=18, minute=0).isoformat()}}
 ]
 
 # RETHINKDB SETTINGS
@@ -68,6 +68,7 @@ class UserPreferencesManager:
     user_id : UUID
     event_type : String
     preference_type : String
+    preference_name : String
     attributes : Dictionary
     """
 
@@ -82,6 +83,19 @@ class UserPreferencesManager:
     def list(self, user_id):
         selection = list(self.USER_PREFERENCES_TABLE.filter(
             {"user_id": user_id}).run(self.connection))
+
+        return selection
+
+    def list_or_default(self, user_id):
+        selection = self.list(user_id)
+
+        if len(selection) == 0:
+            for p in DEFAULT_USER_PREFERENCES:
+                print(p)
+                data = p
+                data['user_id'] = user_id
+                self.insert(data)
+            selection = self.list(user_id)
 
         return selection
 

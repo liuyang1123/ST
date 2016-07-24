@@ -79,7 +79,8 @@ class Wit:
         resp = req(self.logger, self.access_token, 'POST', '/converse', params, json=context)
         return resp
 
-    def __run_actions(self, session_id, message, context, i, verbose):
+    def __run_actions(self, session_id, message, context,
+                      i, verbose, user_token):
         if i <= 0:
             raise WitError('Max steps reached, stopping.')
         json = self.converse(session_id, message, context, verbose)
@@ -105,6 +106,7 @@ class Wit:
             'context': dict(context),
             'text': message,
             'entities': json.get('entities'),
+            'token': user_token
         }
         if json['type'] == 'msg':
             self.throw_if_action_missing('send')
@@ -122,16 +124,18 @@ class Wit:
                 context = {}
         else:
             raise WitError('unknown type: ' + json['type'])
-        return self.__run_actions(session_id, None, context, i - 1, verbose)
+        return self.__run_actions(session_id, None,
+                                  context, i - 1, verbose, user_token)
 
     def run_actions(self, session_id, message, context=None,
-                    max_steps=DEFAULT_MAX_STEPS, verbose=None):
+                    max_steps=DEFAULT_MAX_STEPS, verbose=None, user_token=None):
         if not self.actions:
             self.throw_must_have_actions()
 
         if context is None:
             context = {}
-        return self.__run_actions(session_id, message, context, max_steps, verbose)
+        return self.__run_actions(session_id, message, context,
+                                  max_steps, verbose, user_token)
 
     def interactive(self, context=None, max_steps=DEFAULT_MAX_STEPS):
         """Runs interactive command line chat between user and bot. Runs

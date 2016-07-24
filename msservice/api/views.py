@@ -14,24 +14,10 @@ from api.learning_module.hard_constraints.preferences.manager import UserPrefere
 from api.learning_module.soft_constraints.data_utils import *
 from api.learning_module.soft_constraints.bayesian_network import BayesianNetworkModel
 
-# class SchedulingTasksViewSet(viewsets.ModelViewSet):
-#     queryset = SchedulingTask.objects.all()
-#     serializer_class = SchedulingTaskSerializer
-#     # IsStaff TODO Update the UserService to know if the authenticated user is
-#     # a Staff Member -> This way users can know the status of their event
-#     # scheduling, and staff member can track general statuses
-#     permission_classes = (IsAuthenticated,)
-#
-#     def perform_update(self, serializer):
-#         # Actualizar event_id, etc.
-#         pass
-#
-#     def perform_create(self, serializer):
-#         pass
-
 
 class ScheduleViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
+    renderer_classes = (JSONRenderer, )
 
     def list(self, request):
         decoded_token = decode_token(request.META)
@@ -59,10 +45,10 @@ class ScheduleViewSet(viewsets.ViewSet):
                 initiator_id=decoded_token['user_id'],
                 result='needs_action'
             )
-            st.save()
+            re = st.save()[0]
+            re_s = EventSerializer(re.to_dict())
 
-            return Response({"message": "Event created."},
-                            status=status.HTTP_201_CREATED)
+            return Response(re_s.data, status=status.HTTP_201_CREATED)
         return Response({
             'data': serializer.errors,
             'message': 'Event could not be created with the given data.'
@@ -83,6 +69,7 @@ class ScheduleViewSet(viewsets.ViewSet):
 
 class InvitationViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
+    renderer_classes = (JSONRenderer, )
 
     def list(self, request):
         decoded_token = decode_token(request.META)
@@ -131,6 +118,7 @@ class InvitationViewSet(viewsets.ViewSet):
 
 class BNTrainingView(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
+    renderer_classes = (JSONRenderer, )
 
     def create(self, request):
         """
@@ -172,6 +160,7 @@ class BNTrainingView(viewsets.ViewSet):
 
 class PreferenceViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
+    renderer_classes = (JSONRenderer, )
 
     def create(self, request):
         decoded_token = decode_token(request.META)
@@ -193,11 +182,12 @@ class PreferenceViewSet(viewsets.ViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def list(self, request):
+        # TODO Group by the preferences by event_type, in order to show in the UI the time range, duration, mode of comm., etc.
         decoded_token = decode_token(request.META)
 
         preference_manager = UserPreferencesManager()
         serializer = PreferenceSerializer(
-            preference_manager.list(decoded_token['user_id']),
+            preference_manager.list_or_default(decoded_token['user_id']),
             many=True)
         preference_manager.close()
 
@@ -289,77 +279,6 @@ class PreferenceViewSet(viewsets.ViewSet):
                         status=status.HTTP_201_CREATED)
 
 
-
-
-
-from api.witai import Wit
-
-wit_access_token = 'N3YY33JVMGXRJG7GKY3LA4BXUVXIFYCK'
-
-# Quickstart example
-# See https://wit.ai/ar7hur/Quickstart
-
-def first_entity_value(entities, entity):
-    if entity not in entities:
-        return None
-    val = entities[entity][0]['value']
-    if not val:
-        return None
-    return val['value'] if isinstance(val, dict) else val
-
-
-rsp = ""
-def send(request, response):
-    print("send")
-    rsp = response['text']
-    print(rsp)
-
-def schedule_event(request):
-    print("schedule_event")
-    print(request)
-    context = request['context']
-    entities = request['entities']
-
-    loc = first_entity_value(entities, 'location')
-
-    context['timeslot'] = "xxx"
-
-    return context
-
-actions = {
-    'send': send,
-    'scheduleEvent': schedule_event,
-}
-
-client = Wit(access_token=wit_access_token, actions=actions)
-
-class NlView(viewsets.ViewSet):
-    renderer_classes = (JSONRenderer, )
-
-    def create(self, request):
-        # Alternatives:
-        #  - Receive a new email
-        #  - Receive a message from the chat
-        print(request.data.get("text"))
-        import uuid
-        # d = client.converse(session_id=uuid.uuid1(),
-        #                     message=request.data.get("text"))
-        # print("converse")
-        # print(d)
-        d = client.run_actions(session_id=uuid.uuid1(),
-                               message=request.data.get("text"))
-        print("run_actions")
-        print(d)
-        print("rsp in create")
-        print(rsp)
-        return Response(d.get('msg'), status=status.HTTP_200_OK)
-
-
-
-
-
-
-
 # Routers provide an easy way of automatically determining the URL conf.
 router = routers.DefaultRouter()
 router.register(r'scheduling', ScheduleViewSet, base_name='scheduling')
@@ -367,7 +286,3 @@ router.register(r'invitation', InvitationViewSet, base_name='invitation')
 router.register(r'bayesiannetwork', BNTrainingView,
                 base_name='bayesiannetwork')
 router.register(r'preferences', PreferenceViewSet, base_name='preferences')
-router.register(r'messages', NlView, base_name='messages')
-# ModelViewSet:
-# router.register(r'scheduling-feed', SchedulingTasksViewSet,
-#                 base_name='scheduling_feed')

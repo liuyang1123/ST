@@ -3,8 +3,9 @@ from api.config import SLOT_SIZE
 
 class Event(object):  # Python 2
 
-    def __init__(self, participants, event_type=None, description=None,
-                 duration=None, start_time=None, end_time=None, location=None):
+    def __init__(self, participants, event_type=None, calendar_id=-1,
+                 description=None, duration=None, start_time=None,
+                 end_time=None, location=None, attr=None):
         self.participants = participants
         self.event_type = event_type
         self.description = description
@@ -14,6 +15,29 @@ class Event(object):  # Python 2
         self.location = location
         self.importance = None  # Calculate lambda
         self.mode_of_communication = None
+        self.calendar_id = -1
+        self.summary = str(event_type) + " at " + str(start_time)
+        self.attr = attr
+
+    def to_dict(self):
+        return {"id": self.attr.get("id", ""),
+                "calendar_id": self.attr.get("calendar_id", "-1"),
+                "user_id": self.attr.get("user_id"),
+                "summary": self.summary,
+                "description": self.attr.get("description", ""),
+                "deleted": False,
+                "start": self.start_time,
+                "end": self.end_time,
+                "duration": self.duration,
+                "location": self.location,
+                "participation_status": self.attr.get("participation_status"),
+                "attendees": self.attr.get("attendees"),
+                "transparency": self.attr.get("transparency"),
+                "event_status": self.attr.get("event_status"),
+                "categories": str(self.event_type),
+                "is_fixed": self.attr.get("is_fixed", False),
+                "created": self.attr.get("created"),
+                "updated": self.attr.get("updated")}
 
     def set_mode_of_communication(self, mode_of_communication):
         self.mode_of_communication = mode_of_communication

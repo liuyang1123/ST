@@ -57,16 +57,26 @@ class SchedulingTask(models.Model):
 
             if event_json is not None and len(event_json) > 0:
                 event_json = event_json
-
+                event_json["created"] = parse(event_json["created"])
+                event_json["updated"] = parse(event_json["updated"])
+                
                 # Get the valid range to schedule the event
                 start = event_json.get('start', None)  # Si es None -> Tomorrow
                 if start is not None and start != '':
                     start = parse(start)
+                    try:
+                        start = start.date()
+                    except:
+                        pass
                 else:
                     start = date.today() + timedelta(days=1)
                 end = event_json.get('end', None)  # Si es None +15 days
                 if end is not None and end != '':
                     end = parse(end)
+                    try:
+                        end = end.date()
+                    except:
+                        pass
                 else:
                     end = date.today() + timedelta(days=7)
 
@@ -97,14 +107,17 @@ class SchedulingTask(models.Model):
                               duration=int(event_json.get('duration', 0)),
                               start_time=start,
                               end_time=end,
-                              location=event_json.get('location', ''))
+                              location=event_json.get('location', ''),
+                              attr = event_json)
 
                 # 2. Create a scheduler object
                 s = Scheduler([event], [self])
                 # 3. Select the best (n) timeslots
-                s.select_slot()
+                re = s.select_slot()
                 # Close the connection
                 s.cleanup()
+
+                return re
 
             # 4. Create the new updates mechanisms (started, tentative, confirm)
             # 5. Send users invitations

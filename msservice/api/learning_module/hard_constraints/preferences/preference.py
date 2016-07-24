@@ -1,3 +1,5 @@
+from dateutil.parser import parse
+
 ANY = ""
 USER = "user"
 START_TIME = "start_time"
@@ -43,8 +45,8 @@ class BookableHoursPreference(Preference):
             event_type,
             args)
         # super().__init__(preference_name, event_type, args)
-        self.start = args.get(START_TIME, None)
-        self.end = args.get(END_TIME, None)
+        self.start = parse(args.get(START_TIME)).time()
+        self.end = parse(args.get(END_TIME)).time()
         self.preference_type = "BookableHoursPreference"
 
     def _calculate_confidence_score(self, event):
