@@ -60,7 +60,8 @@ class PreferenceSerializer(serializers.Serializer):
         max_length=40, allow_blank=True, default="")
     event_type = serializers.CharField(
         max_length=40, allow_blank=True, default="")
-    attributes = serializers.JSONField(binary=True)
+    # attributes = serializers.JSONField(binary=True)
+    attributes = serializers.DictField()
 
     # def validate_preference_name(self, preference_name):
     #     if preference_name.lower() in PREFERENCE_NAME:

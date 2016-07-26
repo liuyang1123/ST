@@ -15,6 +15,8 @@ USER_PREFERENCES = {
     "TimeBetweenPreference": preference.TimeBetweenPreference,
     "MaxDistancePreference": preference.MaxDistancePreference,
     "ModeOfCommunicationPreference": preference.ModeOfCommunicationPreference
+    # TODO Add location preferences
+    # TODO Add know travel time between A and B, is not a preference, but knowledge
 }
 
 DEFAULT_USER_PREFERENCES = [
@@ -86,16 +88,21 @@ class UserPreferencesManager:
 
         return selection
 
+    def list_group_by(self, user_id):
+        selection = self.USER_PREFERENCES_TABLE.filter(
+            {"user_id": user_id}).group("event_type").run(self.connection)
+
+        return selection
+
     def list_or_default(self, user_id):
-        selection = self.list(user_id)
+        selection = self.list_group_by(user_id)
 
         if len(selection) == 0:
             for p in DEFAULT_USER_PREFERENCES:
-                print(p)
                 data = p
                 data['user_id'] = user_id
                 self.insert(data)
-            selection = self.list(user_id)
+            selection = self.list_group_by(user_id)
 
         return selection
 

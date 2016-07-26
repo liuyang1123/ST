@@ -6,6 +6,7 @@ from api.event_module.calendar_client import CalendarDBClient
 
 # TODO Add the specific timezone to the datetimes. Right now is empty.
 
+# TODO Every event has a priority if the priority is high use a rescheduling approach
 
 class Scheduler:
 
@@ -121,7 +122,7 @@ class Scheduler:
             self._send_invitations(i, event)
 
         return result
-        
+
     def _send_invitations(self, i, event):
         if self.tasks is not None:
             for attendee in event.participants:

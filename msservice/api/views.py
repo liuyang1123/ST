@@ -186,12 +186,13 @@ class PreferenceViewSet(viewsets.ViewSet):
         decoded_token = decode_token(request.META)
 
         preference_manager = UserPreferencesManager()
-        serializer = PreferenceSerializer(
-            preference_manager.list_or_default(decoded_token['user_id']),
-            many=True)
+        x = preference_manager.list_or_default(decoded_token['user_id'])
+        # serializer = PreferenceSerializer(
+        #     preference_manager.list_or_default(decoded_token['user_id']),
+        #     many=True)
         preference_manager.close()
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(x, status=status.HTTP_200_OK)
 
     # def retrieve(self, request, pk=None):
     #     if pk is None:
@@ -237,8 +238,10 @@ class PreferenceViewSet(viewsets.ViewSet):
                 'preference_type', data['preference_type'])
             data['event_type'] = serializer.validated_data.get(
                 'event_type', data['event_type'])
-            data['attributes'] = json.loads(serializer.validated_data.get(
-                'attributes', data['attributes']))
+            # data['attributes'] = json.loads(serializer.validated_data.get(
+            #     'attributes', data['attributes']))
+            data['attributes'] = serializer.validated_data.get(
+                'attributes', data['attributes'])
 
             updated = preference_manager.update(pk, data)
             preference_manager.close()
@@ -247,7 +250,7 @@ class PreferenceViewSet(viewsets.ViewSet):
 
         preference_manager.close()
 
-        return Response(serializer.errors)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def destroy(self, request, pk=None):
         if pk is None:
