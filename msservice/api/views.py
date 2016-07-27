@@ -162,6 +162,18 @@ class PreferenceViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
     renderer_classes = (JSONRenderer, )
 
+    def list(self, request):
+        decoded_token = decode_token(request.META)
+
+        preference_manager = UserPreferencesManager()
+        x = preference_manager.list_or_default(decoded_token['user_id'])
+        # serializer = PreferenceSerializer(
+        #     preference_manager.list_or_default(decoded_token['user_id']),
+        #     many=True)
+        preference_manager.close()
+
+        return Response(x, status=status.HTTP_200_OK)
+
     def create(self, request):
         decoded_token = decode_token(request.META)
 
@@ -180,29 +192,6 @@ class PreferenceViewSet(viewsets.ViewSet):
                              "data": inserted}, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def list(self, request):
-        # TODO Group by the preferences by event_type, in order to show in the UI the time range, duration, mode of comm., etc.
-        decoded_token = decode_token(request.META)
-
-        preference_manager = UserPreferencesManager()
-        x = preference_manager.list_or_default(decoded_token['user_id'])
-        # serializer = PreferenceSerializer(
-        #     preference_manager.list_or_default(decoded_token['user_id']),
-        #     many=True)
-        preference_manager.close()
-
-        return Response(x, status=status.HTTP_200_OK)
-
-    # def retrieve(self, request, pk=None):
-    #     if pk is None:
-    #         return Response({
-    #             'message': 'Provide the object id.'
-    #         }, status=status.HTTP_400_BAD_REQUEST)
-    #
-    #     decoded_token = decode_token(request.META)
-    #     return Response(self.get_preference(
-    #         decoded_token['user_id'], pk), status=status.HTTP_200_OK)
 
     def update(self, request, pk=None):
         if pk is None:
@@ -282,6 +271,52 @@ class PreferenceViewSet(viewsets.ViewSet):
                         status=status.HTTP_201_CREATED)
 
 
+class DynamicPreferenceView(viewsets.ViewSet):
+    permission_classes = (IsAuthenticated,)
+    renderer_classes = (JSONRenderer, )
+
+    @list_route(methods=['post'])
+    def train(self, request):
+        decoded_token = decode_token(request.META)
+        user_id = decoded_token['user_id']
+
+        method = request.data.get('method', 'bn')
+
+        if method == 'bn':
+            # TODO Do this as a Celery task
+            datasets_bn = read_data_sets(user_id, False)
+            bn = BayesianNetworkModel(user_id)
+            bn.build_model()
+            data, labels = datasets_bn.train.next_batch()
+            bn.train(data, labels)
+            bn.save()
+            bn.close()
+
+        return Response({"message": "Training started."},
+                        status=status.HTTP_200_OK)
+
+    @list_route(methods=['post'])
+    def infer(self, request):
+        """
+        Triggers the learning mechanism.
+        """
+        decoded_token = decode_token(request.META)
+        user_id = decoded_token['user_id']
+
+        method = request.data.get('method', 'bn')
+        result = {}
+
+        if method == 'bn':
+            bn = BayesianNetworkModel(user_id)
+            obs = json.loads(request.data.get('observation', '{}'))
+            r = bn.predict(obs)
+            print(r)
+            result["result"] = json.loads(r["participant"]).get("parameters")[0]['true']
+            bn.close()
+
+        return Response(json.dumps(result), status=status.HTTP_200_OK)
+
+
 # Routers provide an easy way of automatically determining the URL conf.
 router = routers.DefaultRouter()
 router.register(r'scheduling', ScheduleViewSet, base_name='scheduling')
@@ -289,3 +324,5 @@ router.register(r'invitation', InvitationViewSet, base_name='invitation')
 router.register(r'bayesiannetwork', BNTrainingView,
                 base_name='bayesiannetwork')
 router.register(r'preferences', PreferenceViewSet, base_name='preferences')
+router.register(r'dpreferences', DynamicPreferenceView,
+                base_name='dpreferences')

@@ -118,9 +118,35 @@ def schedule_event(request):
     # Call the SS Api to start the scheduling job
     # return request['context']
 
+def infer_attendance(request):
+    print("infer_attendance")
+    print(request)
+    context = request['context']
+    entities = request['entities']
+
+    # TODO Call SS to start the scheduling algorithm
+    #
+    # loc = first_entity_value(entities, 'location')
+
+    event_type = first_entity_value(entities, 'event_type')
+    duration = first_entity_value(entities, 'duration')
+    obs = json.dumps({"type": event_type, "duration": duration})
+    try:
+        request = requests.post(
+            "http://127.0.0.1:9000/api/v1/dpreferences/infer/",
+            headers={'Authorization': request.get('token')},
+            data={'observation': obs})
+        context['result'] = request.json()
+    except requests.exceptions.RequestException as e:
+        print("- ERROR detected -")
+        print(e)
+
+    return context
+
 ACTIONS = {
     'send': send,
     'scheduleEvent': schedule_event,
+    'inferAttendance': infer_attendance
 }
 
 client = Wit(access_token=WIT_ACCESS_TOKEN, actions=ACTIONS)

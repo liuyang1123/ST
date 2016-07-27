@@ -7,7 +7,9 @@ END_TIME = "end_time"
 DURATION = "duration"
 DISTANCE = "distance"
 MODE_OF_COMMUNICATION = "ModeOfCommunicationPreference"
-
+VALID_FROM = "valid_from"
+VALID_UNTIL = "valid_until"
+PRIORITY = "priority"
 
 class Preference(object):  # Python 2
     """
@@ -20,6 +22,9 @@ class Preference(object):  # Python 2
         self.preference_name = preference_name
         self.event_type = event_type
         self.user = args.get(USER, None)
+        self.valid_from = args.get(VALID_FROM, None)
+        self.valid_until = args.get(VALID_UNTIL, None)
+        self.priority = args.get(PRIORITY, 0)
         self.preference_type = ""
 
     def _calculate_confidence_score(self, event):
@@ -30,9 +35,17 @@ class Preference(object):  # Python 2
         Calculates the cosine / distance between the event value and the
         preferred value.
         """
+        temporary_valid = True
+        if self.valid_from is not None and self.valid_until is not None:
+            if ( ((parse(self.valid_from) < event.start_time) and (event.start_time < parse(self.valid_until))) or
+                 ((parse(self.valid_from) < event.end_time) and (event.end_time < parse(self.valid_until))) ):
+                temporary_valid = True
+            else:
+                temporary_valid = False
+
         if self.event_type == ANY or self.event_type == str(event.event_type):
-            return self._calculate_confidence_score(event)
-        return 0
+            return self._calculate_confidence_score(event) - self.priority
+        return 0.0
 
 
 class BookableHoursPreference(Preference):
