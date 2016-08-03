@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from dateutil.parser import parse
 from flask import Flask, render_template, session, request, jsonify
 from flask_socketio import SocketIO, emit, join_room, leave_room, \
     close_room, rooms, disconnect
@@ -78,10 +79,20 @@ def send(request, response):
 def first_entity_value(entities, entity):
     if entity not in entities:
         return None
-    val = entities[entity][0]['value']
+    val = entities[entity][0].get('value', entities[entity][0])
     if not val:
         return None
-    return val['value'] if isinstance(val, dict) else val
+    return val.get('value', val) if isinstance(val, dict) else val
+
+def first_entity_value_time(entities, entity):
+    if entity not in entities:
+        return None, None
+    val = entities[entity][0].get('value', entities[entity][0])
+    x1 = parse(val["values"][0]["from"]["value"]).time().isoformat()
+    x2 = parse(val["values"][0]["to"]["value"]).time().isoformat()
+
+    return x1, x2
+
 
 def schedule_event(request):
     print("schedule_event")
@@ -143,10 +154,46 @@ def infer_attendance(request):
 
     return context
 
+def update_preference(request):
+    print("update_preference")
+    print(request)
+    context = request['context']
+    entities = request['entities']
+
+    d = {}
+    a = {}
+    event_type = first_entity_value(entities, 'event_type')
+    d["event_type"] = event_type
+    duration = first_entity_value(entities, 'duration')
+    if duration is not None:
+        a["duration"] = duration
+    preference_type = first_entity_value(entities, 'preference_type')
+    d["preference_type"] = preference_type
+    _start_time, _end_time = first_entity_value_time(entities, 'datetime')
+    if _start_time is not None:
+        a["start_time"] = _start_time
+        a["end_time"] = _end_time
+
+    #location = first_entity_value(entities, 'duration')
+    attributes = json.dumps(a)
+    d["attributes"] = attributes
+    try:
+        request = requests.post(
+            "http://127.0.0.1:9000/api/v1/preferences/",
+            headers={'Authorization': request.get('token')},
+            data=d)
+        context['result'] = request.json()
+    except requests.exceptions.RequestException as e:
+        print("- ERROR detected -")
+        print(e)
+
+    return context
+
 ACTIONS = {
     'send': send,
     'scheduleEvent': schedule_event,
-    'inferAttendance': infer_attendance
+    'inferAttendance': infer_attendance,
+    'updatePreference': update_preference
 }
 
 client = Wit(access_token=WIT_ACCESS_TOKEN, actions=ACTIONS)
@@ -167,6 +214,14 @@ def message(message):
 @app.route('/events', methods=['GET'])
 def get_tasks():
     return jsonify({'status': 'ok'})
+
+
+# TODO Change the app setting the default channel id as the user_id
+# @app.route('/invitation', methods=['POST'])
+# def send_invitation(invitation):
+#     emit('response', {'message': invitation},
+#          room=invitation.user)
+
 
 # def changes():
 #     conn = r.connect( "localhost", 28015)

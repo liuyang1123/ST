@@ -80,10 +80,14 @@ class InvitationViewSet(viewsets.ViewSet):
 
     @list_route(methods=['get'])
     def pending(self, request):
+        print("ENTRA?")
         decoded_token = decode_token(request.META)
         serializer = InvitationSerializer(Invitation.objects.filter(
             attendee=decoded_token['user_id'],
             answered=False), many=True)
+        print("PENDING")
+        print(serializer)
+        print(serializer.data)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -178,12 +182,13 @@ class PreferenceViewSet(viewsets.ViewSet):
         decoded_token = decode_token(request.META)
 
         serializer = PreferenceSerializer(data=request.data)
+        print(request.data)
         if serializer.is_valid():
             preference_manager = UserPreferencesManager()
 
             data = serializer.data
             data['user_id'] = decoded_token['user_id']
-            data['attributes'] = json.loads(data['attributes'])
+            data['attributes'] = json.loads(request.data['attributes'])
 
             inserted = preference_manager.insert(data)
             preference_manager.close()
@@ -310,11 +315,12 @@ class DynamicPreferenceView(viewsets.ViewSet):
             bn = BayesianNetworkModel(user_id)
             obs = json.loads(request.data.get('observation', '{}'))
             r = bn.predict(obs)
-            print(r)
+            # print(r)
             result["result"] = json.loads(r["participant"]).get("parameters")[0]['true']
+            result["data"] = r
             bn.close()
 
-        return Response(json.dumps(result), status=status.HTTP_200_OK)
+        return Response(result, status=status.HTTP_200_OK)
 
 
 # Routers provide an easy way of automatically determining the URL conf.

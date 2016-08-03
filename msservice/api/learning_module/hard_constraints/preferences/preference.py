@@ -35,6 +35,7 @@ class Preference(object):  # Python 2
         Calculates the cosine / distance between the event value and the
         preferred value.
         """
+        # TODO Allow to set only valid_from or valid_until (no need to have both)
         temporary_valid = True
         if self.valid_from is not None and self.valid_until is not None:
             if ( ((parse(self.valid_from) < event.start_time) and (event.start_time < parse(self.valid_until))) or
@@ -44,7 +45,7 @@ class Preference(object):  # Python 2
                 temporary_valid = False
 
         if self.event_type == ANY or self.event_type == str(event.event_type):
-            return self._calculate_confidence_score(event) - self.priority
+            return self._calculate_confidence_score(event) - self.priority * 0.2
         return 0.0
 
 

@@ -146,6 +146,19 @@ class UserPreferencesManager:
         return updated
 
     def insert(self, document):
+        # TODO
+        # Si existe el mismo tipo de preferencia y no se establece prioridades -> Reemplazar
+        pref = list(self.USER_PREFERENCES_TABLE.filter({
+            "user_id": document.get("user_id"),
+            "preference_type": document.get("preference_type"),
+            "event_type": document.get("event_type")
+        }).run(self.connection))
+        for p in pref:
+            pr = p.get("attributes", {}).get("priority", None)
+            if pr is None:
+                self.USER_PREFERENCES_TABLE.get(
+                    p.get('id')).delete().run(self.connection)
+
         inserted = self.USER_PREFERENCES_TABLE.insert(
             document).run(self.connection)
         return inserted

@@ -1,3 +1,5 @@
+from .data_utils import read_data_sets_cf
+
 # SVD - Singular Value Decomposition
 
 BATCH_SIZE = 100
@@ -84,5 +86,7 @@ def cf(df_train, df_test):
                 print("{:3d} {:f} {:f} {:f}(s)".format(i // samples_per_batch, train_err, np.sqrt(np.mean(test_err2)),
                                                        end - start))
                 start = end
-        output_graph_def = tf.python.client.graph_util.extract_sub_graph(sess.graph.as_graph_def(),
-        tf.train.SummaryWriter(logdir="/tmp/svd", graph_def=output_graph_def)                          ["svd_inference", "svd_regularizer"])
+        output_graph_def = tf.python.client.graph_util.extract_sub_graph(
+            sess.graph.as_graph_def(),
+            tf.train.SummaryWriter(logdir="/tmp/svd",
+                                   graph_def=output_graph_def)["svd_inference", "svd_regularizer"])
