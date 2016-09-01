@@ -1,7 +1,7 @@
 Django
 django-cors-headers
 django-rest-swagger==0.3.8
-djangorestframework==3.3.3
+djangorestframework
 djangorestframework-jwt
 python-dateutil
 PyJWT
@@ -9,6 +9,6 @@ PyYAML
 wheel
 celery
 redis
-requests
 psycopg2
+requests
 rethinkdb

@@ -1,3 +1,3 @@
-SLOT_SIZE = 5  # 5 Minutes
+SLOT_SIZE = 15  # 5 Minutes
 SLOTS_PER_HOUR = 60 / SLOT_SIZE
 SLOTS_PER_DAY = float(SLOTS_PER_HOUR * 24)

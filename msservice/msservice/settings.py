@@ -23,7 +23,7 @@ USER_SERVICE_BASE_URL = "http://172.17.0.1:8000/"
 US_CLIENT_ID = "72c691c5-3ee8-40c2-b617-e3e5510b12b6"
 
 
-RDB_HOST = "127.0.0.1"  # "rethinkdb"
+RDB_HOST = "rethinkdb"
 RDB_PORT = 28015
 
 # Quick-start development settings - unsuitable for production
@@ -91,22 +91,22 @@ WSGI_APPLICATION = 'msservice.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.9/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-#         'NAME': 'postgres',
-#         'USER': 'postgres',
-#         'HOST': 'mspostgres',
-#         'PORT': 5432,
-#     }
-# }
-
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'testdb.db'),
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'postgres',
+        'USER': 'postgres',
+        'HOST': 'mspostgres',
+        'PORT': 5432,
     }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': os.path.join(BASE_DIR, 'testdb.db'),
+#     }
+# }
 
 
 # Password validation

@@ -90,6 +90,10 @@ class CalendarDBClient():
                 '/u/' +
                 str(user_id) +
                 '/events/events/')
+
+            if request.status_code == 500:
+                return []
+                
             return request.json()
         except requests.exceptions.RequestException as e:
             pass

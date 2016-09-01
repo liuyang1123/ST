@@ -322,6 +322,7 @@ class DynamicPreferenceView(viewsets.ViewSet):
 
         return Response(result, status=status.HTTP_200_OK)
 
+from api.learning_module.ML.apiendpoint import MLViewSet
 
 # Routers provide an easy way of automatically determining the URL conf.
 router = routers.DefaultRouter()
@@ -332,3 +333,5 @@ router.register(r'bayesiannetwork', BNTrainingView,
 router.register(r'preferences', PreferenceViewSet, base_name='preferences')
 router.register(r'dpreferences', DynamicPreferenceView,
                 base_name='dpreferences')
+router.register(r'MLViewSet/(?P<model>\S+)', MLViewSet,
+                base_name='MLViewSet')
