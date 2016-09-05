@@ -10,8 +10,10 @@ DEFAULT_MAX_STEPS = 5
 INTERACTIVE_PROMPT = '> '
 LEARN_MORE = 'Learn more at https://wit.ai/docs/quickstart'
 
+
 class WitError(Exception):
     pass
+
 
 def req(logger, access_token, meth, path, params, **kwargs):
     full_url = WIT_API_HOST + path
@@ -36,18 +38,20 @@ def req(logger, access_token, meth, path, params, **kwargs):
     logger.debug('%s %s %s', meth, full_url, json)
     return json
 
+
 def validate_actions(logger, actions):
     if not isinstance(actions, dict):
         logger.warn('The second parameter should be a dictionary.')
     for action in ['send']:
         if action not in actions:
             logger.warn('The \'' + action + '\' action is missing. ' +
-                            LEARN_MORE)
+                        LEARN_MORE)
     for action in actions.keys():
         if not hasattr(actions[action], '__call__'):
             logger.warn('The \'' + action +
-                            '\' action should be a function.')
+                        '\' action should be a function.')
     return actions
+
 
 class Wit:
     access_token = None
@@ -76,7 +80,13 @@ class Wit:
             params['verbose'] = True
         if message:
             params['q'] = message
-        resp = req(self.logger, self.access_token, 'POST', '/converse', params, json=context)
+        resp = req(
+            self.logger,
+            self.access_token,
+            'POST',
+            '/converse',
+            params,
+            json=context)
         return resp
 
     def __run_actions(self, session_id, message, context,
@@ -120,15 +130,22 @@ class Wit:
             self.throw_if_action_missing(action)
             context = self.actions[action](request)
             if context is None:
-                self.logger.warn('missing context - did you forget to return it?')
+                self.logger.warn(
+                    'missing context - did you forget to return it?')
                 context = {}
         else:
             raise WitError('unknown type: ' + json['type'])
         return self.__run_actions(session_id, None,
                                   context, i - 1, verbose, user_token)
 
-    def run_actions(self, session_id, message, context=None,
-                    max_steps=DEFAULT_MAX_STEPS, verbose=None, user_token=None):
+    def run_actions(
+            self,
+            session_id,
+            message,
+            context=None,
+            max_steps=DEFAULT_MAX_STEPS,
+            verbose=None,
+            user_token=None):
         if not self.actions:
             self.throw_must_have_actions()
 
@@ -169,4 +186,6 @@ class Wit:
             raise WitError('unknown action: ' + action_name)
 
     def throw_must_have_actions(self):
-        raise WitError('You must provide the `actions` parameter to be able to use runActions. ' + LEARN_MORE)
+        raise WitError(
+            'You must provide the `actions` parameter to be able to use runActions. ' +
+            LEARN_MORE)

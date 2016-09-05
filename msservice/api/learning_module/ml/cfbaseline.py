@@ -1,8 +1,7 @@
-from .networkmodel import NetworkModel
+from networkmodel import NetworkModel
 
-
-class TensorflowBasedModel(NetworkModel):
-    network_type = "TensorflowBasedModel"
+class CFModel(NetworkModel):
+    network_type = ""
 
     def train(self, dataset):
         """
@@ -26,6 +25,9 @@ class TensorflowBasedModel(NetworkModel):
         return
 
     def _build(self):
+        """
+        Constructs the model
+        """
         return
 
     def _default(self):

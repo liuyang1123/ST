@@ -146,6 +146,7 @@ def read_data_sets(user, need_labels=False, train_size=100, validation_size=0,
                              need_labels)
     return data_sets
 
+
 def parse_dataset_cf(events, training_objs=[]):
     """
     Values is: [user_id, item_id]
@@ -161,20 +162,28 @@ def parse_dataset_cf(events, training_objs=[]):
             s = parse(event.get('start')).time().hour * SLOTS_PER_HOUR + \
                 parse(event.get('start')).time().minute / SLOT_SIZE
             event_type = event.get('categories')
-            values.append() # Get number of event_type id * max_number_of_slots + s -> i * max + offset (AKA item)
-            labels.append([5]) # TODO Here we can append two things: 1. The rating a number between [1-5] or 2. #item / total_items_of_this_category
+            values.append()  # Get number of event_type id * max_number_of_slots + s -> i * max + offset (AKA item)
+            # TODO Here we can append two things: 1. The rating a number
+            # between [1-5] or 2. #item / total_items_of_this_category
+            labels.append([5])
 
     for to in training_objs:
         s = to.start.time().hour * SLOTS_PER_HOUR + to.start.time().minute / SLOT_SIZE
         event_type = to.event_type
-        values.append() # Get number of event_type id * max_number_of_slots + s -> i * max + offset (AKA item)
-        labels.append([1]) # TODO Here we can append two things: 1. The rating a number between [1-5] or 2. #item / total_items_of_this_category
-
+        values.append()  # Get number of event_type id * max_number_of_slots + s -> i * max + offset (AKA item)
+        # TODO Here we can append two things: 1. The rating a number between
+        # [1-5] or 2. #item / total_items_of_this_category
+        labels.append([1])
 
     return values, labels
 
-def read_data_sets_cf(user=None, need_labels=False, train_size=80, validation_size=10,
-                      test_size=10):
+
+def read_data_sets_cf(
+        user=None,
+        need_labels=False,
+        train_size=80,
+        validation_size=10,
+        test_size=10):
     """
     1. Get all the user ids
     2. For each user get their events
@@ -203,4 +212,5 @@ def read_data_sets_cf(user=None, need_labels=False, train_size=80, validation_si
     data_sets.test = DataSet(data[v_max:],
                              labels[v_max:] if need_labels else [],
                              need_labels)
-    return data_sets, len(users) #, Do the math to return the total number of items
+    # , Do the math to return the total number of items
+    return data_sets, len(users)

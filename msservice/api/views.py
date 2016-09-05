@@ -316,13 +316,14 @@ class DynamicPreferenceView(viewsets.ViewSet):
             obs = json.loads(request.data.get('observation', '{}'))
             r = bn.predict(obs)
             # print(r)
-            result["result"] = json.loads(r["participant"]).get("parameters")[0]['true']
+            result["result"] = json.loads(
+                r["participant"]).get("parameters")[0]['true']
             result["data"] = r
             bn.close()
 
         return Response(result, status=status.HTTP_200_OK)
 
-from api.learning_module.ML.apiendpoint import MLViewSet
+from api.learning_module.ml.apiendpoint import MLViewSet
 
 # Routers provide an easy way of automatically determining the URL conf.
 router = routers.DefaultRouter()

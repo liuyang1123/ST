@@ -1,16 +1,23 @@
-from rest_framework import routers, views, viewsets, mixins, status
+# -*- coding: utf-8 -*-
+"""
+Author:
+"""
+from rest_framework import routers, views, viewsets, status
 from rest_framework.decorators import list_route
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.decorators import list_route
-from rest_framework_jwt.settings import api_settings
-from api.models import MyUser, Profile, Application, ApplicationUser  # , AppAuthorization
-# , AppAuthorizationSerializer
-from api.serializers import UserSerializer, ProfileSerializer, ApplicationSerializer, ApplicationUserSerializer
-from api.utils import decode_token
-from api.permissions import IsAuthenticated, UserViewSetPermissions, ProfileViewSetPermissions
 from rest_framework.renderers import JSONRenderer
+from rest_framework_jwt.settings import api_settings
 from rest_framework_jwt.views import ObtainJSONWebToken
+from models import MyUser, Profile, Application, ApplicationUser  # , AppAuthorization
+# , AppAuthorizationSerializer
+from serializers import UserSerializer, ProfileSerializer, \
+    ApplicationSerializer
+from utils import decode_token
+from permissions import IsAuthenticated, UserViewSetPermissions, \
+    ProfileViewSetPermissions
+
+
 
 class GetTokenView(ObtainJSONWebToken):
     """
@@ -27,7 +34,9 @@ class RegistrationView(views.APIView):
     permission_classes = (AllowAny,)
     renderer_classes = (JSONRenderer, )
 
-    def post(self, request, *args):
+    def post(self, request):
+        """
+        """
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.create()
@@ -46,6 +55,9 @@ class RegistrationView(views.APIView):
 
 
 class ApplicationViewSet(viewsets.ModelViewSet):
+    """
+
+    """
     serializer_class = ApplicationSerializer
     permission_classes = (IsAuthenticated,)
     lookup_field = 'client_id'
@@ -62,6 +74,8 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         return []
 
     def perform_update(self, serializer):
+        """
+        """
         decoded_token = decode_token(self.request.META)
         if decoded_token is not None:
             serializer.save(
@@ -77,20 +91,29 @@ class ApplicationViewSet(viewsets.ModelViewSet):
 
 
 class AllUsersView(views.APIView):
+    """
+
+    """
 
     permission_classes = (AllowAny,)
 
     def get(self, request):
+        """
+        """
         serializer = UserSerializer(MyUser.objects.all(), many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class UserView(views.APIView):
+    """
+    """
 
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):
+        """
+        """
         decoded_token = decode_token(request.META)
         serializer = UserSerializer(
             MyUser.objects.get(
@@ -99,6 +122,8 @@ class UserView(views.APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request):
+        """
+        """
         # Si cambia el email puede generar problemas serios, por eso se retorna
         # un nuevo token
         decoded_token = decode_token(request.META)
@@ -123,6 +148,8 @@ class UserView(views.APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request):
+        """
+        """
         decoded_token = decode_token(request.META)
         MyUser.objects.get(email=decoded_token['email']).delete()
 
@@ -130,29 +157,38 @@ class UserView(views.APIView):
 
 
 class UserViewSet(viewsets.ModelViewSet):
+    """
+    """
+
     serializer_class = UserSerializer
     permission_classes = (UserViewSetPermissions,)
     lookup_field = 'profile__profile_id'
 
     def get_queryset(self):
+        """
+        """
         client_id = self.kwargs['client_id']
         users = ApplicationUser.objects.filter(
-            application__client_id=client_id).values_list(
-            'user', flat=True)
+            application__client_id=client_id).values_list('user',
+                                                          flat=True)
         return MyUser.objects.filter(pk__in=users)
 
     def filter_queryset(self, queryset):
+        """
+        """
         decoded_token = decode_token(self.request.META)
         try:
             # If the user is the owner
-            app = Application.objects.get(client_id=self.kwargs['client_id'],
-                                          owner__email=decoded_token['email'])
+            # app = Application.objects.get(client_id=self.kwargs['client_id'],
+            #                               owner__email=decoded_token['email'])
             return queryset
         except Application.DoesNotExist:
             return queryset.filter(email=decoded_token['email'])
         return queryset
 
     def create(self, request, *args, **kwargs):
+        """
+        """
         app = None
         try:
             app = Application.objects.get(client_id=self.kwargs['client_id'])
@@ -184,6 +220,8 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @list_route(methods=['post'])
     def get_user_by_email(self, request, *args, **kwargs):
+        """
+        """
         email = request.data['email']
 
         app_user = ApplicationUser.objects.filter(
@@ -206,27 +244,31 @@ class ProfileViewSet(viewsets.ModelViewSet):
     lookup_field = 'profile_id'
 
     def get_queryset(self):
+        """
+        """
         client_id = self.kwargs['client_id']
         users = ApplicationUser.objects.filter(
-            application__client_id=client_id).values_list(
-            'user', flat=True)
+            application__client_id=client_id).values_list('user', flat=True)
         return Profile.objects.filter(user__in=users)
 
     def filter_queryset(self, queryset):
+        """
+        """
         decoded_token = decode_token(self.request.META)
         try:
             # If the user is the owner
-            app = Application.objects.get(client_id=self.kwargs['client_id'],
-                                          owner__email=decoded_token['email'])
+            # app = Application.objects.get(client_id=self.kwargs['client_id'],
+            #                               owner__email=decoded_token['email'])
             return queryset
         except Application.DoesNotExist:
             return queryset.filter(user__email=decoded_token['email'])
         return queryset
 
     def create(self, request, *args, **kwargs):
-        app = None
+        """
+        """
         try:
-            app = Application.objects.get(client_id=self.kwargs['client_id'])
+            Application.objects.get(client_id=self.kwargs['client_id'])
         except Application.DoesNotExist:
             return Response({
                 'message': 'Invalid client_id.'
@@ -250,11 +292,6 @@ class ProfileViewSet(viewsets.ModelViewSet):
 
     def delete(self, request, *args):
         pass
-
-# class AppAuthorizationViewSet(viewsets.ModelViewSet):
-#     queryset = AppAuthorization.objects.all()
-#     serializer_class = AppAuthorizationSerializer
-#     permission_classes = (IsAuthenticated,) # TODO Edit: OwnerPermission
 
 
 # Routers provide an easy way of automatically determining the URL conf.

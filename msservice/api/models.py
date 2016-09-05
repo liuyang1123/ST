@@ -59,7 +59,7 @@ class SchedulingTask(models.Model):
                 event_json = event_json
                 event_json["created"] = parse(event_json["created"])
                 event_json["updated"] = parse(event_json["updated"])
-                
+
                 # Get the valid range to schedule the event
                 start = event_json.get('start', None)  # Si es None -> Tomorrow
                 if start is not None and start != '':
@@ -108,7 +108,7 @@ class SchedulingTask(models.Model):
                               start_time=start,
                               end_time=end,
                               location=event_json.get('location', ''),
-                              attr = event_json)
+                              attr=event_json)
 
                 # 2. Create a scheduler object
                 s = Scheduler([event], [self])

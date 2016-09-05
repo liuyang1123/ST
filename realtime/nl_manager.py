@@ -16,6 +16,7 @@ RDB_PORT = 28015
 NL_DB = "nl"
 CONVERSATION_TABLE = "chat"
 
+
 class ConversationManager:
     """
     === Preference Attributes ===
@@ -41,7 +42,8 @@ class ConversationManager:
         return selection
 
     def insert(self, document):
-        inserted = self.conversation_table.insert(document).run(self.connection)
+        inserted = self.conversation_table.insert(
+            document).run(self.connection)
 
         return inserted
 

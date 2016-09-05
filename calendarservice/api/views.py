@@ -76,7 +76,7 @@ class CalendarViewSet(viewsets.ViewSet):
         return Response({"data": updated}, status=status.HTTP_200_OK)
 
     def partial_update(self, request, pk=None):
-        return self.update(self, request, pk)
+        return self.update(request, pk)
 
     def destroy(self, request, pk=None):
         if pk is None:
@@ -118,7 +118,7 @@ class EventsViewSet(viewsets.ViewSet):
 
         if len(obj) < 1:
             calendar_id = -1
-            #return Response({"message": "calendar_id does not exists."},
+            # return Response({"message": "calendar_id does not exists."},
             #                status=status.HTTP_404_NOT_FOUND)
 
         serializer = EventSerializer(data=request.data)
@@ -366,8 +366,8 @@ class QEventViewSet(viewsets.ViewSet):
         decoded_token = decode_token(request.META)
 
         event = Event()
-        deleted = event.delete_event_with_user_id(pk,
-                                                  int(decoded_token['user_id']))
+        deleted = event.delete_event_with_user_id(
+            pk, int(decoded_token['user_id']))
         event.close()
 
         return Response({"data": deleted}, status=status.HTTP_200_OK)

@@ -3,7 +3,9 @@ from dateutil.parser import parse
 from flask import Flask, render_template, session, request, jsonify
 from flask_socketio import SocketIO, emit, join_room, leave_room, \
     close_room, rooms, disconnect
-import json, uuid, requests
+import json
+import uuid
+import requests
 from nl_manager import ConversationManager
 from witai import Wit
 
@@ -19,7 +21,9 @@ app.config['SECRET_KEY'] = 'ec3f9d37-0004-4798-81ac-443237317bb6'
 socketio = SocketIO(app, async_mode=async_mode)
 thread = None
 
+
 class ChatSession(object):
+
     def __init__(self, session, msg, user=None, attributes={}):
         self.session = session
         self.user = user
@@ -39,41 +43,47 @@ class ChatSession(object):
                 "message": self.message,
                 "attributes": self.attributes}
 
+
 @app.route('/')
 def index():
     return render_template('index.html', async_mode=socketio.async_mode)
+
 
 @socketio.on('connect', namespace='/wb')
 def on_connect():
     print("Connected")
     # emit('my response', {'data': 'Connected', 'count': 0})
 
+
 @socketio.on('disconnect', namespace='/wb')
 def on_disconnect():
     print("Disconnected")
+
 
 @socketio.on('disconnect request', namespace='/wb')
 def on_disconnect_request():
     print("Disconnect request")
     disconnect()
 
+
 @socketio.on('join', namespace='/wb')
 def join(message={}):
-    r_id = message.get('room', str(uuid.uuid4()));
+    r_id = message.get('room', str(uuid.uuid4()))
     join_room(r_id)
     emit('joined', {'room': r_id})
+
 
 @socketio.on('leave', namespace='/wb')
 def leave(message):
     # leave_room(message['room'])
     close_room(message['room'])
 
+
 def send(request, response):
     cs = ChatSession(session=request['session_id'],
                      msg=response['text'])
     cs.save()
     emit('response', {'message': response['text']}, room=request['session_id'])
-
 
 
 def first_entity_value(entities, entity):
@@ -83,6 +93,7 @@ def first_entity_value(entities, entity):
     if not val:
         return None
     return val.get('value', val) if isinstance(val, dict) else val
+
 
 def first_entity_value_time(entities, entity):
     if entity not in entities:
@@ -129,6 +140,7 @@ def schedule_event(request):
     # Call the SS Api to start the scheduling job
     # return request['context']
 
+
 def infer_attendance(request):
     print("infer_attendance")
     print(request)
@@ -153,6 +165,7 @@ def infer_attendance(request):
         print(e)
 
     return context
+
 
 def update_preference(request):
     print("update_preference")
@@ -198,6 +211,7 @@ ACTIONS = {
 
 client = Wit(access_token=WIT_ACCESS_TOKEN, actions=ACTIONS)
 
+
 @socketio.on('message', namespace='/wb')
 def message(message):
     print("Incoming")
@@ -210,6 +224,7 @@ def message(message):
     d = client.run_actions(session_id=message.get('room'),
                            message=message.get('message'),
                            user_token=message.get('token'))
+
 
 @app.route('/events', methods=['GET'])
 def get_tasks():

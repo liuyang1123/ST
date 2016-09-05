@@ -16,7 +16,8 @@ USER_PREFERENCES = {
     "MaxDistancePreference": preference.MaxDistancePreference,
     "ModeOfCommunicationPreference": preference.ModeOfCommunicationPreference
     # TODO Add location preferences
-    # TODO Add know travel time between A and B, is not a preference, but knowledge
+    # TODO Add know travel time between A and B, is not a preference, but
+    # knowledge
 }
 
 DEFAULT_USER_PREFERENCES = [
@@ -147,7 +148,8 @@ class UserPreferencesManager:
 
     def insert(self, document):
         # TODO
-        # Si existe el mismo tipo de preferencia y no se establece prioridades -> Reemplazar
+        # Si existe el mismo tipo de preferencia y no se establece prioridades
+        # -> Reemplazar
         pref = list(self.USER_PREFERENCES_TABLE.filter({
             "user_id": document.get("user_id"),
             "preference_type": document.get("preference_type"),

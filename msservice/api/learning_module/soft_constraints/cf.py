@@ -5,9 +5,16 @@ from .data_utils import read_data_sets_cf
 BATCH_SIZE = 100
 MAX_EPOCHS = 100
 
-def svd(number_of_users, number_of_items, batch_users, batch_items, dimension=10):
+
+def svd(
+        number_of_users,
+        number_of_items,
+        batch_users,
+        batch_items,
+        dimension=10):
     # All the biases: mu, b_u, b_i
-    average_rating = tf.get_variable("mu", shape=[]) # This is one number. AKA global bias
+    # This is one number. AKA global bias
+    average_rating = tf.get_variable("mu", shape=[])
     embedding_user_bias = tf.get_variable("b_u", shape=[number_of_users])
     embedding_item_bias = tf.get_variable("b_i", shape=[number_of_items])
 
@@ -26,15 +33,19 @@ def svd(number_of_users, number_of_items, batch_users, batch_items, dimension=10
     q_i = tf.nn.embedding_lookup(embedding_q_item, batch_items, name="q_i")
 
     # EstimateRating_ui = average_rating + bias_users + bias_items + q_iT * p_u
-    infer = tf.reduce_sum(tf.matmul(q_i, p_u), 1) # We need the column vector
+    infer = tf.reduce_sum(tf.matmul(q_i, p_u), 1)  # We need the column vector
     infer = tf.add(infer, average_rating)
     infer = tf.add(infer, bias_users)
     infer = tf.add(infer, bias_items, name="svd_inference")
 
     # Regularization
-    regularization = tf.add(tf.nn.l2_loss(q_i), tf.nn.l2_loss(p_u), name="svd_regularizer")
+    regularization = tf.add(
+        tf.nn.l2_loss(q_i),
+        tf.nn.l2_loss(p_u),
+        name="svd_regularizer")
 
     return infer, regularization
+
 
 def opt(infer, regularizer, rate_batch, lr=0.05, reg=0.5):
     l2_cost = tf.nn.l2_loss(tf.sub(infer, rate_batch))
@@ -43,6 +54,7 @@ def opt(infer, regularizer, rate_batch, lr=0.05, reg=0.5):
     train_op = tf.train.AdamOptimizer(lr).minimize(cost)
 
     return cost, train_op
+
 
 def cf(df_train, df_test):
     datasets, total_users, total_items = read_data_sets_cf()
@@ -60,7 +72,12 @@ def cf(df_train, df_test):
     init = tf.initializer_all_variables()
     with tf.Session() as sess:
         sess.run(init)
-        print("{} {} {} {}".format("epoch", "train_error", "val_error", "elapsed_time"))
+        print(
+            "{} {} {} {}".format(
+                "epoch",
+                "train_error",
+                "val_error",
+                "elapsed_time"))
         errors = deque(maxlen=samples_per_batch)
         start = time.time()
         for i in range(MAX_EPOCHS * samples_per_batch):
@@ -83,10 +100,18 @@ def cf(df_train, df_test):
                 #     pred_batch = clip(pred_batch)
                 #     test_err2 = np.append(test_err2, np.power(pred_batch - rates, 2))
                 end = time.time()
-                print("{:3d} {:f} {:f} {:f}(s)".format(i // samples_per_batch, train_err, np.sqrt(np.mean(test_err2)),
-                                                       end - start))
+                print(
+                    "{:3d} {:f} {:f} {:f}(s)".format(
+                        i // samples_per_batch,
+                        train_err,
+                        np.sqrt(
+                            np.mean(test_err2)),
+                        end - start))
                 start = end
         output_graph_def = tf.python.client.graph_util.extract_sub_graph(
             sess.graph.as_graph_def(),
-            tf.train.SummaryWriter(logdir="/tmp/svd",
-                                   graph_def=output_graph_def)["svd_inference", "svd_regularizer"])
+            tf.train.SummaryWriter(
+                logdir="/tmp/svd",
+                graph_def=output_graph_def)[
+                "svd_inference",
+                "svd_regularizer"])
