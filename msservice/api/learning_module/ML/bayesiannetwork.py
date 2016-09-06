@@ -20,7 +20,10 @@ class BayesianNetworkModel(NetworkModel):
         """
         Start the learning algorithm
         """
-        data, labels = dataset.train.next_batch()
+        data, labels = [], []
+
+        if dataset is not None:
+            data, labels = dataset.train.next_batch()
 
         if not self.model:
             self._build()

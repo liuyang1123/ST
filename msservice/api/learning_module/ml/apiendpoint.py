@@ -25,20 +25,20 @@ class MLViewSet(viewsets.ViewSet):
         return None
 
     def _get_dataset(self, instance_id, config):
-        d = config.get("dataset", None)
-        if d is not None:
+        if config is not None:
             try:
-                c = KNOWN_DATASETS[d]
-                if c['name'] == "mnist":
-                    return MNISTDataset(config=c)
+                d = KNOWN_DATASETS[config]
+                if d['name'] == "mnist":
+                    return MNISTDataset(config=d)
             except KeyError:
                 pass
 
     @detail_route(methods=['post'])
     def train(self, request, model, pk):
-        c = request.data.get("config", None)
-        d = self._get_dataset(pk, c)
-        m = self._get_model(model, pk, c)
+        dataset = request.data.get("dataset", None)
+        config = request.data.get("config", None)
+        d = self._get_dataset(pk, dataset)
+        m = self._get_model(model, pk, config)
 
         if m is None:
             return Response({"error": "The model name doesn't exists."},
@@ -52,7 +52,7 @@ class MLViewSet(viewsets.ViewSet):
     def predict(self, request, model, pk):
         c = request.data.get("config", None)
         m = self._get_model(model, pk, c)
-        obs = request.data.get('query', '{}')
+        obs = request.data.get('query', {})
         result = m.predict(obs)
 
         return Response(json.dumps(result), status=status.HTTP_200_OK)
