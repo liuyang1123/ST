@@ -212,9 +212,16 @@ class Event:
 
         return selection
 
-    def list_all_events_for_training(self, user_id):
+    def list_all_events_for_training_user(self, user_id):
         selection = list(self.event_table.filter(
             {"user_id": user_id}).filter(
+                (r.row["start"] != r.expr("")) & (r.row["end"] != r.expr(""))
+        ).run(self.connection))
+
+        return selection
+
+    def list_all_events_for_training(self):
+        selection = list(self.event_table.filter(
                 (r.row["start"] != r.expr("")) & (r.row["end"] != r.expr(""))
         ).run(self.connection))
 

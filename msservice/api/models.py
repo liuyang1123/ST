@@ -127,17 +127,21 @@ class SchedulingTask(models.Model):
         # value
 
 
-class Training(models.Model):
+class RankingEvents(models.Model):
     user_id = models.CharField(max_length=50)
     event_type = models.CharField(max_length=30)
     start = models.DateTimeField()
     end = models.DateTimeField()
-    duration = models.IntegerField()
+    duration = models.IntegerField() # 30, 60, 120
     location = models.CharField(max_length=50, default='X')
-    feedback = models.BooleanField(default=False)
-    # participants
-    # location
+    feedback = models.IntegerField() # 0 - 1 / 1 - 5
 
+class EventItem(models.Model):
+    event_type = models.IntegerField()
+    duration = models.IntegerField() # 30, 60, 120
+    day = models.IntegerField()
+    timeslot = models.IntegerField()    
+    location = models.CharField(max_length=50, default='X')
 
 class Invitation(models.Model):
     task = models.ForeignKey(SchedulingTask)
@@ -153,12 +157,12 @@ class Invitation(models.Model):
 
             if not self.decision:
                 # Save the event as negative sampling
-                t = Training(user_id=self.attendee,
-                             event_type=event.get("categories"),
-                             start=parse(event.get("start")),
-                             end=parse(event.get("end")),
-                             duration=int(event.get("duration")),
-                             feedback=False)
+                t = RankingEvents(user_id=self.attendee,
+                                  event_type=event.get("categories"),
+                                  start=parse(event.get("start")),
+                                  end=parse(event.get("end")),
+                                  duration=int(event.get("duration")),
+                                  feedback=0)
                 t.save()
             else:
                 invitations = Invitation.objects.filter(task=self.task)
@@ -184,10 +188,10 @@ class Invitation(models.Model):
                         pass
                 # TODO Figure out if it would be a good idea to create training
                 # data from this.
-                t = Training(user_id=self.attendee,
+                t = RankingEvents(user_id=self.attendee,
                              event_type=event.get("categories"),
                              start=parse(event.get("start")),
                              end=parse(event.get("end")),
                              duration=int(event.get("duration")),
-                             feedback=True)
+                             feedback=1)
                 t.save()

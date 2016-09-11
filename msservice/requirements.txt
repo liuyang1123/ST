@@ -12,3 +12,4 @@ redis
 psycopg2
 requests
 rethinkdb
+pandas

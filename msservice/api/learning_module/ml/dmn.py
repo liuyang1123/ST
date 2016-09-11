@@ -1,72 +1,69 @@
-"""
-Most tasks in NLP can be cast in QA problems over language input.
-This model (DMN) is a unified neural network framework which processes
-input sequences and questions, forms semantic and episodic memories,
-and generates relevant answers.
-Questions trigger an iterative attention process with allow the model
-to condition its attention on the result of previous iterations.
-This results are then reasoned over in the hierarchical recurrent sequence
-model to generate answers
-
-The model relies exclusively on trained word vector representations and
-requires no string matching or manually engineered features.
-
-
-TODO
-    Code organization:
-        - Organize as MemN2N from carpedm20 (github) and similar TF projects.
-                - Separate data processing, config
-
-    Data processing:
-        - Remove this from DMNClass
-        - Support Batches
-        - Shuffle data - Already supported in utils.py
-        - Check that embeddings is done efficiently (compare to a lookup)
-
-    Improve graph:
-        - Implement changes in the episodic memory - avoid using gather!
-        - Calculate batch accuracy
-        - Implement DMN+ improvements
-                - Regularization
-                - Input Fusion layer
-                - Untied weights
-        - Add methods for interactive prediction (give context, and question, return an answer)
-                - Used later in the API
-        - Save and load results - tensorflow
-        - Gradient clipping
-
-    Visualization:
-    - TensorBoard
-    - API UI:   - Show episodes - probs., predict, feed examples, start learning, etc.
-                - Different corpus - NER, POS, etc.
-                    - Slot filling - ATIS corpus
-                    - Sentiment analysis
-
-    New Features:
-            - VQA
-"""
 import tensorflow as tf
+import numpy as np
 from networkmodel import NetworkModel
+from datasets.babidataset import BABIDataset
+
+def get_norm(x):
+    x = np.array(x)
+    return np.sum(x * x)
+
+TASK_1 = {
+    "batch_size": 1,
+    "word_vector_length": 50,
+    "hidden_size": 40,
+    "attention_gate_hidden_size": 40,
+    "max_episodes": 5,
+    "max_input_sentences": 10, # 40. The max input of task 1 is 10
+    "max_question_sentences": 10, # TODO Check this!
+    "max_epochs": 15,
+    "learning_rate": 0.001,
+    "num_classes": 2,
+    "dropout_prob": 0.1,
+    "update_length": 250
+}
+
+class DMNConfig(object):
+    """
+    Default values
+    """
+    def __init__(self, **params):
+        self.batch_size = params.get("batch_size", 1)
+        self.word_vector_length = params.get("word_vector_length", 50)
+        self.hidden_size = params.get("hidden_size", 64)
+        self.attention_gate_hidden_size = params.get("attention_gate_hidden_size", 64)
+        self.max_episodes = params.get("max_episodes", 5)
+        self.max_input_sentences = params.get("max_input_sentences", 10)
+        self.max_question_sentences = params.get("max_question_sentences", 10)
+        self.max_epochs = params.get("max_epochs", 15)
+        self.learning_rate = params.get("learning_rate", 0.001)
+#         self.learning_rate_gate = params.get("learning_rate_gate", 1)
+        self.num_classes = params.get("num_classes", 2)
+        self.dropout_prob = params.get("dropout_prob", 0.1)
+        self.update_length = params.get("update_length", 250)
 
 class DynamicMemoryNetworkModel(NetworkModel):
-    network_type = "DynamicMemoryNetwork"
+    """
+    This model only allows batch_size = 1.
+    """
+    network_type = "DynamicMemoryNetworkLegacy"
 
     def train(self, dataset):
         """
         Start the learning algorithm
         """
-        print("Init finished!")
+        if not self.model:
+            self._build()
 
-        max_sent_length = 0
+        samples_per_batch = self.dataset.number_of_examples_train() // self.config.batch_size
 
         # Train over multiple epochs
         with tf.Session() as sess:
             best_loss = float('inf')
             best_val_epoch = 0
-            sess.run(init)
+            sess.run(self.init)
 
             # train until we reach the maximum number of epochs
-            for epoch in range(self.args.max_epochs):
+            for epoch in range(self.config.max_epochs):
                 total_training_loss = 0
                 num_correct = 0
                 prev_prediction = 0
@@ -75,49 +72,158 @@ class DynamicMemoryNetworkModel(NetworkModel):
                 print('Epoch {}'.format(epoch))
 #                 start = time.time()
 
-                for i in range(len(self.train_input)):
-                    ans = np.zeros((1, self.vocab_size))
-                    ans[0][self.train_answer[i]] = 1
+                for i in range(samples_per_batch):
+                    tr_elems, answers, i_seq_len, q_seq_len, imask = self.dataset.next_batch(self.config.batch_size)
+                    tr_elems, answers, imask = self.preprocess_batch(tr_elems[0], tr_elems[1], answers, imask)
+                    ans = np.zeros((self.config.batch_size, self.dataset.vocab_size))
+                    for i in np.arange(self.config.batch_size):
+                        ans[i][answers[i]] = 1.
+                    # ans[np.arange(self.config.batch_size), answers] = 1.0
+                    print("ans", ans)
+                    print("answers", answers)
+                    print("ans shape", ans.shape)
 
                     # For debugging:
                     # Input module: _input_tensor - self.input_only_for_testing
                     # Question module: _question_representation - self.question_representation
                     # Episode module: _e_i - self.e_i / _e_m_s - self.episodic_memory_state
                     loss, _, pred_prob, _projections = sess.run(
-                        [cost, optimizer, self.prediction, self.projections],
-                        feed_dict={self.input_placeholder: [self.train_input[i]],
-                                   self.input_length_placeholder: [len(self.train_input[i])],
-                                   self.end_of_sentences_placeholder: [self.train_input_mask[i]],
-                                   self.question_placeholder: [self.train_q[i]],
-                                   self.question_length_placeholder: [len(self.train_q[i])],
+                        [self.cost, self.optimizer, self.prediction, self.projections],
+                        feed_dict={self.input_placeholder: tr_elems[0],
+                                   self.input_length_placeholder: i_seq_len,
+                                   self.end_of_sentences_placeholder: imask,
+                                   self.question_placeholder: tr_elems[1],
+                                   self.question_length_placeholder: q_seq_len,
                                    self.labels_placeholder: ans,
-                                   self.gate_placeholder: [float(self.train_gate[i])]})
+                                   #self.gate_placeholder: [float(self.train_gate[i])]
+                                  })
 
                     total_training_loss += loss
 
                     if np.argmax(pred_prob) == np.argmax(ans):
                         num_correct += 1
 
-                    if i % self.args.update_length == 0:
+                    if i % self.config.update_length == 0:
                         print "Current average training loss: {}".format(total_training_loss / (i + 1))
                         print "Current training accuracy: {}".format(float(num_correct) / (i + 1))
-                        print("Ans: " + str(self.ivocab[np.argmax(ans)]))
-                        print("Pred: " + str(self.ivocab[np.argmax(pred_prob)]))
+                        print("Ans: " + str(self.dataset.ivocab[np.argmax(ans)]))
+                        print("Pred: " + str(self.dataset.ivocab[np.argmax(pred_prob)]))
+
+
+
+
+
+
+
+    def preprocess_batch(self, context, question, answer, mask):
+        """ Vectorizes padding and masks last word of sentence. (EOS token)
+        :param batches: A tuple (input, question, label, mask)
+        :return A tuple (input, question, label, mask)
+        """
+        # make input and question fixed size
+        new_input = np.zeros([self.config.batch_size,
+                              self.dataset.max_input_size,
+                              self.config.word_vector_length])  # zero padding
+        new_question = np.zeros([self.config.batch_size,
+                                 self.dataset.max_question_size,
+                                 self.config.word_vector_length])
+        new_mask = np.zeros([self.config.batch_size, self.dataset.max_input_size])
+        new_labels = []
+
+        for n in np.arange(self.config.batch_size):
+            for row in np.arange(context[n].shape):
+                for col in np.arange():
+                    new_input[n][row][col] = context[n][row][col]
+
+            for row in np.arange(question[n].shape):
+                for col in np.arange():
+                    new_question[n][row][col] = question[n][row][col]
+
+            for row in np.arange(mask[n].shape):
+                new_mask[n][row] = mask[n][row]
+
+        return [new_input, new_question], new_labels, new_mask
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     def save(self):
         """
         Allows to save the training results, in order to restore them for later use
         """
-        return
+        return None
 
     def predict(self, query):
-        return
+        return None
 
     def _load(self):
-        return
+        return None
 
     def _process_dataset(self, dataset):
         return
+
+    def _build(self):
+        """
+        The semantic memory module (SMM) gives the words vectors (GloVe) to
+        the input module (IM), which computes the representation for each
+        sentence. The question module (QM) computes a representation of the
+        question too. The output of this two modules are used in the episodic
+        memory module (EMM) and reason over them. The output is then given to
+        the answer module (AM).
+
+        For bAbI tasks the Mean Accuracy (%) should be 93.6.
+
+        TODO:
+            - Cross entropy training of the gates.
+                bAbI posee en el dataset esta informacion, tratar de
+                generalizar la clase para soportar otros datasets
+                J = a * CE(Gates) + b * CE(Answers)
+        """
+        self.dataset = BABIDataset(config={"workdir": "./datasets/dmn/data/",
+                                           "training_task": "1",
+                                           "testing_task": "1",
+                                           "use_10k": False,
+                                           "input_mask_mode": 'sentence', "word_vector_length": 50})
+        self.config = DMNConfig()
+
+        self._add_placeholders()
+        self._input_module()
+        self._question_module()
+        self._episodic_memory_module()
+        self._answer_module()
+
+        global_step = tf.Variable(0, trainable=False)
+#         learning_rate = tf.train.exponential_decay(INITIAL_LEARNING_RATE,
+#                                                    global_step,
+#                                                    1000, 0.1, staircase=True) # Every epoch
+
+        # Compute loss
+        self.cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(self.projections, self.labels_placeholder))
+
+        # Add optimizer
+#         optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost, global_step=global_step)
+        self.optimizer = tf.train.AdamOptimizer(learning_rate=self.config.learning_rate).minimize(self.cost)
+
+#         correct_prediction = tf.equal(tf.argmax(self.prediction, 1), tf.argmax(self.labels_placeholder, 1))
+#         self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
+
+        # Initialize all variables
+        self.init = tf.initialize_all_variables()
+#         saver = tf.train.Saver()
+
+    def _default(self):
+        return None
 
     def _add_placeholders(self):
         """
@@ -128,15 +234,25 @@ class DynamicMemoryNetworkModel(NetworkModel):
         """
 
         # 1 = Batch Size
-        self.input_placeholder = tf.placeholder(
-            tf.float32, shape=[self.args.batch_size, None,
-                               self.args.word_vector_length])
-        self.input_length_placeholder = tf.placeholder(tf.int32, shape=[self.args.batch_size])
-        self.end_of_sentences_placeholder = tf.placeholder(tf.int32, shape=[self.args.batch_size, None])
-        self.question_placeholder = tf.placeholder(tf.float32, shape=[self.args.batch_size, None, self.args.word_vector_length])
-        self.question_length_placeholder = tf.placeholder(tf.int32, shape=[self.args.batch_size])
-        self.labels_placeholder = tf.placeholder(tf.float32, shape=[self.args.batch_size, self.vocab_size])
-        self.gate_placeholder = tf.placeholder(tf.float32, shape=[self.args.batch_size])
+        self.input_placeholder = tf.placeholder( # Batch, Max_length
+            tf.float32, shape=[None, self.dataset.max_input_size,
+                               self.config.word_vector_length], name="context")
+        self.input_length_placeholder = tf.placeholder(
+            tf.int32, shape=[None], name="context_length")
+        self.end_of_sentences_placeholder = tf.placeholder(
+            tf.int32, shape=[None, self.dataset.max_input_size], name="context_mask")
+
+        self.question_placeholder = tf.placeholder(
+            tf.float32, shape=[None, self.dataset.max_question_size,
+                               self.config.word_vector_length], name="question")
+        self.question_length_placeholder = tf.placeholder(
+            tf.int32, shape=[None], name="question_question")
+
+        self.labels_placeholder = tf.placeholder(
+            tf.float32, shape=[None, self.dataset.vocab_size],
+            name="answer")
+        #self.gate_placeholder = tf.placeholder(tf.float32, shape=[self.config.batch_size])
+
 
     # Takes in an input matrix of size (number of words in input) x (WORD_VECTOR_LENGTH) with the input word vectors
     # and a tensor the length of the number of sentences in the input with the index of the word that ends each
@@ -152,15 +268,12 @@ class DynamicMemoryNetworkModel(NetworkModel):
         - For written language we have a sequence of words (v1, v2, ..., vTw).
         - Recurrent Neural Network (RNN) computation for context states -> GRU
 
-        TODO:
-            - Make this more abstract for "lego" purposes
-            - Support visual input (DMN+). OOP-tensorflow?
-            - The new class should provide methods for visualization.
-                Word vectors, GRU results.
+        NOTE: This method can be heavily simplified by adding zeros to the input (max sequence length)
         """
-        # Compute the number of words in the input
-        self.cell = tf.nn.rnn_cell.GRUCell(num_units=self.args.hidden_size,
-                                           input_size=self.args.word_vector_length)
+        # GRU cell description
+        self.cell = tf.nn.rnn_cell.GRUCell(
+            num_units=self.config.hidden_size,
+            input_size=self.config.word_vector_length)
 
         # Get output after every word.
         # outputs: (BATCH_SIZE, n_words, HIDDEN_SIZE)
@@ -170,7 +283,7 @@ class DynamicMemoryNetworkModel(NetworkModel):
                                            self.input_length_placeholder,
                                            dtype='float32')
 
-        context_rnn_out = tf.reshape(outputs, [-1, self.args.hidden_size]) # Now the shape = [n_words, n_units]
+        context_rnn_out = tf.reshape(outputs, [-1, self.config.hidden_size]) # Now the shape = [n_words, n_units]
 
         # Only project the state at the end of each sentence
         sentence_representations_mat = tf.gather(context_rnn_out,
@@ -183,27 +296,28 @@ class DynamicMemoryNetworkModel(NetworkModel):
 
         # Create another vector containing zeroes to pad `X` to (MAX_INPUT_LENGTH * WORD_VECTOR_LENGTH) elements.
         zero_padding = tf.zeros(
-            [self.args.max_input_sentences * self.args.hidden_size] - tf.shape(sentences_as_vector),
+            [self.dataset.max_input_size * self.config.hidden_size] - tf.shape(sentences_as_vector),
             dtype=sentences_as_vector.dtype)
 
         # Concatenate `X_as_vector` with the padding.
         sentences_padded_as_vector = tf.concat(0, [sentences_as_vector, zero_padding])
 
         # Reshape the padded vector to the desired shape.
-        sentences_padded = tf.reshape(sentences_padded_as_vector, [self.args.max_input_sentences,
-                                                                   self.args.hidden_size])
+        sentences_padded = tf.reshape(sentences_padded_as_vector, [self.dataset.max_input_size,
+                                                                   self.config.hidden_size])
 
         # Split X into a list of tensors of length MAX_INPUT_LENGTH where each tensor is a 1xHIDDEN_SIZE vector
         # of the word vectors
-        self.sentence_representations = tf.split(0, self.args.max_input_sentences, sentences_padded)
+        self.sentence_representations = tf.split(0, self.dataset.max_input_size, sentences_padded)
 
         self.number_of_sentences = tf.shape(sentence_representations_mat)[1]
 
         self.input_only_for_testing = tf.concat(0, self.sentence_representations)
 
         # Result of this module:
-        #                        - List of sentences. Each sentence is a tensor of shape (1, HIDDEN_UNITS). 1=Batch_size
-        #                        - The number of sentences.
+        #   - List of sentences. Each sentence is a tensor of shape (1, HIDDEN_UNITS). 1=Batch_size
+        #   - The number of sentences.
+
 
     def _semantic_memory_module(self):
         """
@@ -269,44 +383,44 @@ class DynamicMemoryNetworkModel(NetworkModel):
                                 tf.nn.softmax(z)
                         - Is it necessary to use the same weigths in the GRU?
         """
-        W_mem_res_in = tf.get_variable("W_mem_res_in", shape=(self.args.hidden_size,
-                                                              self.args.hidden_size))
-        W_mem_res_hid = tf.get_variable("W_mem_res_hid", shape=(self.args.hidden_size,
-                                                                self.args.hidden_size))
-        b_mem_res = tf.get_variable("b_mem_res", shape=(self.args.hidden_size,))
+        W_mem_res_in = tf.get_variable("W_mem_res_in", shape=(self.config.hidden_size,
+                                                              self.config.hidden_size))
+        W_mem_res_hid = tf.get_variable("W_mem_res_hid", shape=(self.config.hidden_size,
+                                                                self.config.hidden_size))
+        b_mem_res = tf.get_variable("b_mem_res", shape=(self.config.hidden_size,))
 
-        W_mem_upd_in = tf.get_variable("W_mem_upd_in", shape=(self.args.hidden_size,
-                                                              self.args.hidden_size))
-        W_mem_upd_hid = tf.get_variable("W_mem_upd_hid", shape=(self.args.hidden_size,
-                                                                self.args.hidden_size))
-        b_mem_upd = tf.get_variable("b_mem_upd", shape=(self.args.hidden_size,))
+        W_mem_upd_in = tf.get_variable("W_mem_upd_in", shape=(self.config.hidden_size,
+                                                              self.config.hidden_size))
+        W_mem_upd_hid = tf.get_variable("W_mem_upd_hid", shape=(self.config.hidden_size,
+                                                                self.config.hidden_size))
+        b_mem_upd = tf.get_variable("b_mem_upd", shape=(self.config.hidden_size,))
 
-        W_mem_hid_in = tf.get_variable("W_mem_hid_in", shape=(self.args.hidden_size,
-                                                              self.args.hidden_size))
-        W_mem_hid_hid = tf.get_variable("W_mem_hid_hid", shape=(self.args.hidden_size,
-                                                                self.args.hidden_size))
-        b_mem_hid = tf.get_variable("b_mem_hid", shape=(self.args.hidden_size,))
+        W_mem_hid_in = tf.get_variable("W_mem_hid_in", shape=(self.config.hidden_size,
+                                                              self.config.hidden_size))
+        W_mem_hid_hid = tf.get_variable("W_mem_hid_hid", shape=(self.config.hidden_size,
+                                                                self.config.hidden_size))
+        b_mem_hid = tf.get_variable("b_mem_hid", shape=(self.config.hidden_size,))
 
         memory_states = [self.question_representation]
 
         with tf.variable_scope("memory"):
-            gru_cell = tf.nn.rnn_cell.GRUCell(num_units = self.args.hidden_size)
-            for i in range(self.args.max_episodes):
+            gru_cell = tf.nn.rnn_cell.GRUCell(num_units = self.config.hidden_size)
+            for i in range(self.config.max_episodes):
                 z_vector = []
                 g_vector = []
                 e_vector = []
                 m_prev = memory_states[-1]
-                for t in range(self.args.max_input_sentences): # (1)
+                for t in range(self.dataset.max_input_size): # (1)
                     s = self.sentence_representations[t]
                     q = self.question_representation
 
                     with tf.variable_scope("episode0", reuse=True if (t > 0 or i > 0) else None):
-                        W_b = tf.get_variable("W_b", shape=(self.args.hidden_size, self.args.hidden_size))
+                        W_b = tf.get_variable("W_b", shape=(self.config.hidden_size, self.config.hidden_size))
 
-                        W_1 = tf.get_variable("W_1", shape=(4 * self.args.hidden_size,
-                                                            self.args.attention_gate_hidden_size))
-                        b_1 = tf.get_variable("b_1", shape=(1, self.args.attention_gate_hidden_size))
-                        W_2 = tf.get_variable("W_2", shape=(self.args.attention_gate_hidden_size, 1))
+                        W_1 = tf.get_variable("W_1", shape=(4 * self.config.hidden_size,
+                                                            self.config.attention_gate_hidden_size))
+                        b_1 = tf.get_variable("b_1", shape=(1, self.config.attention_gate_hidden_size))
+                        W_2 = tf.get_variable("W_2", shape=(self.config.attention_gate_hidden_size, 1))
                         b_2 = tf.get_variable("b_2", shape=(1, 1))
 
                         # Compute z
@@ -328,8 +442,8 @@ class DynamicMemoryNetworkModel(NetworkModel):
                 # Gating function as the attention mechanism
                 # g = G(s, m_prev, q)
                 # G returns a single scalar.
-                h_prev = tf.zeros((1, self.args.hidden_size))
-                for t in range(self.args.max_input_sentences): # (2)
+                h_prev = tf.zeros((1, self.config.hidden_size))
+                for t in range(self.dataset.max_input_size): # (2)
                     s = self.sentence_representations[t]
                     g = z_vector[t] / tf.add_n(z_vector) # Softmax
                     # TODO:
@@ -390,7 +504,6 @@ class DynamicMemoryNetworkModel(NetworkModel):
             # Return final memory state
             self.episodic_memory_state = memory_states[-1]
 
-
     def _answer_module(self):
         """
         This module decodes the memory into a sequence of words representing the
@@ -420,63 +533,9 @@ class DynamicMemoryNetworkModel(NetworkModel):
 #         self.prediction = tf.nn.softmax(self.projections)
 
         with tf.variable_scope("answer_module"):
-            W_out = tf.get_variable("W_out", shape=(self.args.hidden_size, self.vocab_size))
-            b_out = tf.get_variable("b_out", shape=(1, self.vocab_size))
+            W_out = tf.get_variable("W_out", shape=(self.config.hidden_size, self.dataset.vocab_size))
+            b_out = tf.get_variable("b_out", shape=(1, self.dataset.vocab_size))
 
         self.projections = tf.matmul(self.episodic_memory_state, W_out) + b_out
         self.prediction = tf.nn.softmax(self.projections)
-
-    def _build(self):
-        """
-        Constructs the model
-        """
-        """
-        The semantic memory module (SMM) gives the words vectors (GloVe) to
-        the input module (IM), which computes the representation for each
-        sentence. The question module (QM) computes a representation of the
-        question too. The output of this two modules are used in the episodic
-        memory module (EMM) and reason over them. The output is then given to
-        the answer module (AM).
-
-        For bAbI tasks the Mean Accuracy (%) should be 93.6.
-
-        TODO:
-            - Cross entropy training of the gates.
-                bAbI posee en el dataset esta informacion, tratar de
-                generalizar la clase para soportar otros datasets
-                J = a * CE(Gates) + b * CE(Answers)
-        """
-        # max_sent = 0
-        # for i in range(len(self.train_input)):
-        #     if max_sent < len(self.train_input_mask[i]):
-        #         max_sent = len(self.train_input_mask[i])
-        #         print(max_sent)
-        # return
-
-        self._add_placeholders()
-        self._input_module()
-        self._question_module()
-        self._episodic_memory_module()
-        self._answer_module()
-
-        global_step = tf.Variable(0, trainable=False)
-        # learning_rate = tf.train.exponential_decay(INITIAL_LEARNING_RATE,
-        #                                            global_step,
-        #                                            1000, 0.1, staircase=True) # Every epoch
-
-        # Compute loss
-        cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(self.projections, self.labels_placeholder))
-
-        # Add optimizer
-        #         optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost, global_step=global_step)
-        optimizer = tf.train.AdamOptimizer(learning_rate=self.args.learning_rate).minimize(cost)
-
-        # correct_prediction = tf.equal(tf.argmax(self.prediction, 1), tf.argmax(self.labels_placeholder, 1))
-        # self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
-
-        # Initialize all variables
-        init = tf.initialize_all_variables()
-        # saver = tf.train.Saver()
-
-    def _default(self):
-        return
+        self.model = self.prediction

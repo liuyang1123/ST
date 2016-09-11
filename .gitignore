@@ -8,6 +8,10 @@
 log.txt
 *.pyc
 remove-files.sh
+/cf/
+/datasets/
+/mlp/
+*/.ipynb_checkpoints/
 
 */__pycache__/
 $RECYCLE.BIN/

@@ -1,7 +1,7 @@
 import requests
 from msservice.settings import USER_SERVICE_BASE_URL, US_CLIENT_ID
 from api.learning_module.hard_constraints.preferences.manager import UserPreferencesManager
-from api.learning_module.soft_constraints.bayesian_network import BayesianNetworkModel
+from api.learning_module.ml.bayesiannetwork import BayesianNetworkModel
 from api.event_module.calendar_client import CalendarDBClient
 
 

@@ -15,11 +15,11 @@ class MovieLensDataset(Dataset):
 
     def _shuffle(self, obj, perm):
         return np.array(obj)[:,perm]
-        
+
     def _read_process(self, filname, sep="\t"):
         """
         """
-        col_names = ["user", "item", "rate", "st"]
+        col_names = ["user", "item", "rate", "timestamp"]
         df = pd.read_csv(filname, sep=sep, header=None, names=col_names)
         df["user"] -= 1
         df["item"] -= 1
@@ -33,13 +33,26 @@ class MovieLensDataset(Dataset):
         """
         folder = ""
         with ZipFile(self.workdir + self.filenames["100k"], "r") as z:
-            data = z.read(z.namelist()[0] + 'ua.base')
-            df = self._read_process(data, sep="\t")
-            rows = len(df)
-            df = df.iloc[np.random.permutation(rows)].reset_index(drop=True)
-            # split_index = int(rows * 0.9)
-            # df_train = df[0:split_index]
-            # df_validation = df[split_index:].reset_index(drop=True)
+            z.extract('ml-100k/ua.base', self.workdir)
 
-            self.train = [[df["user"], df["item"]], df["rate"]]
-            self.test = [[df_test["user"], df_test["item"]], df_test["rate"]]
+            data = open(self.workdir + 'ml-100k/ua.base')
+            df = self._read_process(data, sep="\t")
+            data.close()
+
+            rows = len(df)
+            split_index = int(rows * 0.9)
+
+            df = df.iloc[np.random.permutation(rows)].reset_index(drop=True)
+
+            df_train = df[0:split_index]
+            df_test = df[split_index:].reset_index(drop=True)
+
+            self.train = [[df_train["user"].values, df_train["item"].values],
+                          df_train["rate"].values]
+
+            self.test = [[df_test["user"].values, df_test["item"].values],
+                         df_test["rate"].values]
+
+            self._num_examples_train = self.train[0][0].shape[0]
+            self._num_examples_test = self.test[0][0].shape[0]
+            self._num_examples_validation = 0

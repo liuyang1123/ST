@@ -1,11 +1,153 @@
+"""
+Most tasks in NLP can be cast in QA problems over language input.
+This model (DMN) is a unified neural network framework which processes
+input sequences and questions, forms semantic and episodic memories,
+and generates relevant answers.
+Questions trigger an iterative attention process which allow the model
+to condition its attention on the result of previous iterations.
+This results are then reasoned over in the hierarchical recurrent sequence
+model to generate answers
+
+The model relies exclusively on trained word vector representations and
+requires no string matching or manually engineered features.
+
+TODO
+    - Train on different corpora:
+        NER - POS
+        Sentiment analysis
+        ATIS corpus
+"""
 import tensorflow as tf
 import numpy as np
 from networkmodel import NetworkModel
-from datasets.babidataset import BABIDataset
+
+
+
+def init_babi(fname):
+    print "==> Loading test from %s" % fname
+    tasks = []
+    task = None
+    for i, line in enumerate(open(fname)):
+        id = int(line[0:line.find(' ')])
+        if id == 1:
+            task = {"C": "", "Q": "", "A": "", "G": ""}
+
+        line = line.strip()
+        line = line.replace('.', ' . ')
+        line = line[line.find(' ')+1:]
+        if line.find('?') == -1:
+            task["C"] += line
+        else:
+            idx = line.find('?')
+            tmp = line[idx+1:].split('\t')
+            task["Q"] = line[:idx]
+            task["A"] = tmp[1].strip()
+            task["G"] = tmp[2].strip()
+            tasks.append(task.copy())
+
+    return tasks
+
+
+def get_babi_raw(id, test_id):
+    babi_map = {
+        "1": "qa1_single-supporting-fact",
+        "2": "qa2_two-supporting-facts",
+        "3": "qa3_three-supporting-facts",
+        "4": "qa4_two-arg-relations",
+        "5": "qa5_three-arg-relations",
+        "6": "qa6_yes-no-questions",
+        "7": "qa7_counting",
+        "8": "qa8_lists-sets",
+        "9": "qa9_simple-negation",
+        "10": "qa10_indefinite-knowledge",
+        "11": "qa11_basic-coreference",
+        "12": "qa12_conjunction",
+        "13": "qa13_compound-coreference",
+        "14": "qa14_time-reasoning",
+        "15": "qa15_basic-deduction",
+        "16": "qa16_basic-induction",
+        "17": "qa17_positional-reasoning",
+        "18": "qa18_size-reasoning",
+        "19": "qa19_path-finding",
+        "20": "qa20_agents-motivations",
+        "MCTest": "MCTest",
+        "19changed": "19changed",
+        "joint": "all_shuffled",
+        "sh1": "../shuffled/qa1_single-supporting-fact",
+        "sh2": "../shuffled/qa2_two-supporting-facts",
+        "sh3": "../shuffled/qa3_three-supporting-facts",
+        "sh4": "../shuffled/qa4_two-arg-relations",
+        "sh5": "../shuffled/qa5_three-arg-relations",
+        "sh6": "../shuffled/qa6_yes-no-questions",
+        "sh7": "../shuffled/qa7_counting",
+        "sh8": "../shuffled/qa8_lists-sets",
+        "sh9": "../shuffled/qa9_simple-negation",
+        "sh10": "../shuffled/qa10_indefinite-knowledge",
+        "sh11": "../shuffled/qa11_basic-coreference",
+        "sh12": "../shuffled/qa12_conjunction",
+        "sh13": "../shuffled/qa13_compound-coreference",
+        "sh14": "../shuffled/qa14_time-reasoning",
+        "sh15": "../shuffled/qa15_basic-deduction",
+        "sh16": "../shuffled/qa16_basic-induction",
+        "sh17": "../shuffled/qa17_positional-reasoning",
+        "sh18": "../shuffled/qa18_size-reasoning",
+        "sh19": "../shuffled/qa19_path-finding",
+        "sh20": "../shuffled/qa20_agents-motivations",
+    }
+    if (test_id == ""):
+        test_id = id
+    babi_name = babi_map[id]
+    babi_test_name = babi_map[test_id]
+    babi_train_raw = init_babi('./datasets/dmn/data/en/%s_train.txt' % babi_name)
+    babi_test_raw = init_babi('./datasets/dmn/data/en/%s_test.txt' % babi_test_name)
+    return babi_train_raw, babi_test_raw
+
+
+def load_glove(dim):
+    word2vec = {}
+
+    print "==> loading glove"
+    with open('./datasets/dmn/data/glove/glove.6B.' + str(dim) + 'd.txt') as f:
+        for line in f:
+            l = line.split()
+            word2vec[l[0]] = map(float, l[1:])
+
+    print "==> glove is loaded"
+
+    return word2vec
+
+
+def create_vector(word, word2vec, word_vector_size, silent=False):
+    # if the word is missing from Glove, create some fake vector and store in glove!
+    vector = np.random.uniform(0.0,1.0,(word_vector_size,))
+    word2vec[word] = vector
+    if (not silent):
+        print "utils.py::create_vector => %s is missing" % word
+    return vector
+
+
+def process_word(word, word2vec, vocab, ivocab, word_vector_size, to_return="word2vec", silent=False):
+    if not word in word2vec:
+        create_vector(word, word2vec, word_vector_size, silent)
+    if not word in vocab:
+        next_index = len(vocab)
+        vocab[word] = next_index
+        ivocab[next_index] = word
+
+    if to_return == "word2vec":
+        return word2vec[word]
+    elif to_return == "index":
+        return vocab[word]
+    elif to_return == "onehot":
+        raise Exception("to_return = 'onehot' is not implemented yet")
+
 
 def get_norm(x):
     x = np.array(x)
     return np.sum(x * x)
+
+
+
 
 TASK_1 = {
     "batch_size": 1,
@@ -14,7 +156,6 @@ TASK_1 = {
     "attention_gate_hidden_size": 40,
     "max_episodes": 5,
     "max_input_sentences": 10, # 40. The max input of task 1 is 10
-    "max_question_sentences": 10, # TODO Check this!
     "max_epochs": 15,
     "learning_rate": 0.001,
     "num_classes": 2,
@@ -33,7 +174,6 @@ class DMNConfig(object):
         self.attention_gate_hidden_size = params.get("attention_gate_hidden_size", 64)
         self.max_episodes = params.get("max_episodes", 5)
         self.max_input_sentences = params.get("max_input_sentences", 10)
-        self.max_question_sentences = params.get("max_question_sentences", 10)
         self.max_epochs = params.get("max_epochs", 15)
         self.learning_rate = params.get("learning_rate", 0.001)
 #         self.learning_rate_gate = params.get("learning_rate_gate", 1)
@@ -41,7 +181,7 @@ class DMNConfig(object):
         self.dropout_prob = params.get("dropout_prob", 0.1)
         self.update_length = params.get("update_length", 250)
 
-class DynamicMemoryNetworkModel(NetworkModel):
+class DynamicMemoryNetworkLegacyModel(NetworkModel):
     """
     This model only allows batch_size = 1.
     """
@@ -53,8 +193,6 @@ class DynamicMemoryNetworkModel(NetworkModel):
         """
         if not self.model:
             self._build()
-
-        samples_per_batch = self.dataset.number_of_examples_train() // self.config.batch_size
 
         # Train over multiple epochs
         with tf.Session() as sess:
@@ -72,16 +210,9 @@ class DynamicMemoryNetworkModel(NetworkModel):
                 print('Epoch {}'.format(epoch))
 #                 start = time.time()
 
-                for i in range(samples_per_batch):
-                    tr_elems, answers, i_seq_len, q_seq_len, imask = self.dataset.next_batch(self.config.batch_size)
-                    tr_elems, answers, imask = self.preprocess_batch(tr_elems[0], tr_elems[1], answers, imask)
-                    ans = np.zeros((self.config.batch_size, self.dataset.vocab_size))
-                    for i in np.arange(self.config.batch_size):
-                        ans[i][answers[i]] = 1.
-                    # ans[np.arange(self.config.batch_size), answers] = 1.0
-                    print("ans", ans)
-                    print("answers", answers)
-                    print("ans shape", ans.shape)
+                for i in range(len(self.train_input)):
+                    ans = np.zeros((1, self.vocab_size))
+                    ans[0][self.train_answer[i]] = 1
 
                     # For debugging:
                     # Input module: _input_tensor - self.input_only_for_testing
@@ -89,11 +220,11 @@ class DynamicMemoryNetworkModel(NetworkModel):
                     # Episode module: _e_i - self.e_i / _e_m_s - self.episodic_memory_state
                     loss, _, pred_prob, _projections = sess.run(
                         [self.cost, self.optimizer, self.prediction, self.projections],
-                        feed_dict={self.input_placeholder: tr_elems[0],
-                                   self.input_length_placeholder: i_seq_len,
-                                   self.end_of_sentences_placeholder: imask,
-                                   self.question_placeholder: tr_elems[1],
-                                   self.question_length_placeholder: q_seq_len,
+                        feed_dict={self.input_placeholder: [self.train_input[i]],
+                                   self.input_length_placeholder: [len(self.train_input[i])],
+                                   self.end_of_sentences_placeholder: [self.train_input_mask[i]],
+                                   self.question_placeholder: [self.train_q[i]],
+                                   self.question_length_placeholder: [len(self.train_q[i])],
                                    self.labels_placeholder: ans,
                                    #self.gate_placeholder: [float(self.train_gate[i])]
                                   })
@@ -106,72 +237,69 @@ class DynamicMemoryNetworkModel(NetworkModel):
                     if i % self.config.update_length == 0:
                         print "Current average training loss: {}".format(total_training_loss / (i + 1))
                         print "Current training accuracy: {}".format(float(num_correct) / (i + 1))
-                        print("Ans: " + str(self.dataset.ivocab[np.argmax(ans)]))
-                        print("Pred: " + str(self.dataset.ivocab[np.argmax(pred_prob)]))
-
-
-
-
-
-
-
-    def preprocess_batch(self, context, question, answer, mask):
-        """ Vectorizes padding and masks last word of sentence. (EOS token)
-        :param batches: A tuple (input, question, label, mask)
-        :return A tuple (input, question, label, mask)
-        """
-        # make input and question fixed size
-        new_input = np.zeros([self.config.batch_size,
-                              self.dataset.max_input_size,
-                              self.config.word_vector_length])  # zero padding
-        new_question = np.zeros([self.config.batch_size,
-                                 self.dataset.max_question_size,
-                                 self.config.word_vector_length])
-        new_mask = np.zeros([self.config.batch_size, self.dataset.max_input_size])
-        new_labels = []
-
-        for n in np.arange(self.config.batch_size):
-            for row in np.arange(context[n].shape):
-                for col in np.arange():
-                    new_input[n][row][col] = context[n][row][col]
-
-            for row in np.arange(question[n].shape):
-                for col in np.arange():
-                    new_question[n][row][col] = question[n][row][col]
-
-            for row in np.arange(mask[n].shape):
-                new_mask[n][row] = mask[n][row]
-
-        return [new_input, new_question], new_labels, new_mask
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                        print("Ans: " + str(self.ivocab[np.argmax(ans)]))
+                        print("Pred: " + str(self.ivocab[np.argmax(pred_prob)]))
 
     def save(self):
         """
         Allows to save the training results, in order to restore them for later use
         """
-        return None
+        return
 
     def predict(self, query):
-        return None
+        return
 
     def _load(self):
-        return None
+        return
 
     def _process_dataset(self, dataset):
-        return
+        data_raw = dataset # TODO Remove this
+        questions = []
+        inputs = []
+        answers = []
+        gate_values = []
+        input_masks = []
+        for x in data_raw:
+            inp = x["C"].lower().split(' ')
+            inp = [w for w in inp if len(w) > 0]
+            q = x["Q"].lower().split(' ')
+            q = [w for w in q if len(w) > 0]
+
+            inp_vector = [process_word(word = w,
+                                        word2vec = self.word2vec,
+                                        vocab = self.vocab,
+                                        ivocab = self.ivocab,
+                                        word_vector_size = self.config.word_vector_length,
+                                        to_return = "word2vec") for w in inp]
+
+            q_vector = [process_word(word = w,
+                                        word2vec = self.word2vec,
+                                        vocab = self.vocab,
+                                        ivocab = self.ivocab,
+                                        word_vector_size = self.config.word_vector_length,
+                                        to_return = "word2vec") for w in q]
+
+            inputs.append(np.vstack(inp_vector).astype(np.float32))
+            questions.append(np.vstack(q_vector).astype(np.float32))
+            answers.append(process_word(word = x["A"],
+                                            word2vec = self.word2vec,
+                                            vocab = self.vocab,
+                                            ivocab = self.ivocab,
+                                            word_vector_size = self.config.word_vector_length,
+                                            to_return = "index"))
+
+            #gate_values.append(int(x["G"]))
+            # NOTE: here we assume the answer is one word!
+            if self.input_mask_mode == 'word':
+                input_masks.append(np.array([index for index, w in enumerate(inp)], dtype=np.int32))
+            elif self.input_mask_mode == 'sentence':
+                input_masks.append(np.array([index for index, w in enumerate(inp) if w == '.'], dtype=np.int32))
+            else:
+                raise Exception("invalid input_mask_mode")
+
+        # TODO: Shuffle the training data
+
+        return inputs, questions, answers, gate_values, input_masks
 
     def _build(self):
         """
@@ -190,12 +318,28 @@ class DynamicMemoryNetworkModel(NetworkModel):
                 generalizar la clase para soportar otros datasets
                 J = a * CE(Gates) + b * CE(Answers)
         """
-        self.dataset = BABIDataset(config={"workdir": "./datasets/dmn/data/",
-                                           "training_task": "1",
-                                           "testing_task": "1",
-                                           "use_10k": False,
-                                           "input_mask_mode": 'sentence', "word_vector_length": 50})
+#         max_sent = 0
+#         for i in range(len(self.train_input)):
+#             if max_sent < len(self.train_input_mask[i]):
+#                 max_sent = len(self.train_input_mask[i])
+#                 print(max_sent)
+#         return
+
+        babi_train_raw, babi_test_raw = get_babi_raw("1", "1") # First argument is babi_id: babi task id, second is babi_id of test set
+
+        word2vec = load_glove(50)
+        self.word2vec = word2vec
+
         self.config = DMNConfig()
+
+        self.vocab = {}
+        self.ivocab = {}
+
+        self.input_mask_mode = "sentence" # Options: "sentence" or "word"
+        self.train_input, self.train_q, self.train_answer, self.train_gate, self.train_input_mask = self._process_dataset(babi_train_raw)
+        self.test_input, self.test_q, self.test_answer, self.test_gate, self.test_input_mask = self._process_dataset(babi_test_raw)
+
+        self.vocab_size = len(self.vocab)
 
         self._add_placeholders()
         self._input_module()
@@ -223,7 +367,7 @@ class DynamicMemoryNetworkModel(NetworkModel):
 #         saver = tf.train.Saver()
 
     def _default(self):
-        return None
+        return
 
     def _add_placeholders(self):
         """
@@ -234,23 +378,20 @@ class DynamicMemoryNetworkModel(NetworkModel):
         """
 
         # 1 = Batch Size
-        self.input_placeholder = tf.placeholder( # Batch, Max_length
-            tf.float32, shape=[None, self.dataset.max_input_size,
-                               self.config.word_vector_length], name="context")
+        self.input_placeholder = tf.placeholder(
+            tf.float32, shape=[self.config.batch_size, None,
+                               self.config.word_vector_length])
         self.input_length_placeholder = tf.placeholder(
-            tf.int32, shape=[None], name="context_length")
+            tf.int32, shape=[self.config.batch_size])
         self.end_of_sentences_placeholder = tf.placeholder(
-            tf.int32, shape=[None, self.dataset.max_input_size], name="context_mask")
-
+            tf.int32, shape=[self.config.batch_size, None])
         self.question_placeholder = tf.placeholder(
-            tf.float32, shape=[None, self.dataset.max_question_size,
-                               self.config.word_vector_length], name="question")
+            tf.float32, shape=[self.config.batch_size, None,
+                               self.config.word_vector_length])
         self.question_length_placeholder = tf.placeholder(
-            tf.int32, shape=[None], name="question_question")
-
+            tf.int32, shape=[self.config.batch_size])
         self.labels_placeholder = tf.placeholder(
-            tf.float32, shape=[None, self.dataset.vocab_size],
-            name="answer")
+            tf.float32, shape=[self.config.batch_size, self.vocab_size])
         #self.gate_placeholder = tf.placeholder(tf.float32, shape=[self.config.batch_size])
 
 
@@ -296,19 +437,19 @@ class DynamicMemoryNetworkModel(NetworkModel):
 
         # Create another vector containing zeroes to pad `X` to (MAX_INPUT_LENGTH * WORD_VECTOR_LENGTH) elements.
         zero_padding = tf.zeros(
-            [self.dataset.max_input_size * self.config.hidden_size] - tf.shape(sentences_as_vector),
+            [self.config.max_input_sentences * self.config.hidden_size] - tf.shape(sentences_as_vector),
             dtype=sentences_as_vector.dtype)
 
         # Concatenate `X_as_vector` with the padding.
         sentences_padded_as_vector = tf.concat(0, [sentences_as_vector, zero_padding])
 
         # Reshape the padded vector to the desired shape.
-        sentences_padded = tf.reshape(sentences_padded_as_vector, [self.dataset.max_input_size,
+        sentences_padded = tf.reshape(sentences_padded_as_vector, [self.config.max_input_sentences,
                                                                    self.config.hidden_size])
 
         # Split X into a list of tensors of length MAX_INPUT_LENGTH where each tensor is a 1xHIDDEN_SIZE vector
         # of the word vectors
-        self.sentence_representations = tf.split(0, self.dataset.max_input_size, sentences_padded)
+        self.sentence_representations = tf.split(0, self.config.max_input_sentences, sentences_padded)
 
         self.number_of_sentences = tf.shape(sentence_representations_mat)[1]
 
@@ -410,7 +551,7 @@ class DynamicMemoryNetworkModel(NetworkModel):
                 g_vector = []
                 e_vector = []
                 m_prev = memory_states[-1]
-                for t in range(self.dataset.max_input_size): # (1)
+                for t in range(self.config.max_input_sentences): # (1)
                     s = self.sentence_representations[t]
                     q = self.question_representation
 
@@ -443,7 +584,7 @@ class DynamicMemoryNetworkModel(NetworkModel):
                 # g = G(s, m_prev, q)
                 # G returns a single scalar.
                 h_prev = tf.zeros((1, self.config.hidden_size))
-                for t in range(self.dataset.max_input_size): # (2)
+                for t in range(self.config.max_input_sentences): # (2)
                     s = self.sentence_representations[t]
                     g = z_vector[t] / tf.add_n(z_vector) # Softmax
                     # TODO:
@@ -533,8 +674,8 @@ class DynamicMemoryNetworkModel(NetworkModel):
 #         self.prediction = tf.nn.softmax(self.projections)
 
         with tf.variable_scope("answer_module"):
-            W_out = tf.get_variable("W_out", shape=(self.config.hidden_size, self.dataset.vocab_size))
-            b_out = tf.get_variable("b_out", shape=(1, self.dataset.vocab_size))
+            W_out = tf.get_variable("W_out", shape=(self.config.hidden_size, self.vocab_size))
+            b_out = tf.get_variable("b_out", shape=(1, self.vocab_size))
 
         self.projections = tf.matmul(self.episodic_memory_state, W_out) + b_out
         self.prediction = tf.nn.softmax(self.projections)

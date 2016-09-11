@@ -7,12 +7,14 @@ Author: Aymeric Damien
 Project: https://github.com/aymericdamien/TensorFlow-Examples/
 '''
 import tensorflow as tf
+import numpy as np
+import os
 from networkmodel import NetworkModel
 
 class MultiLayerPerceptronModel(NetworkModel):
     '''
     '''
-    network_type = ""
+    network_type = "MultiLayerPerceptron"
 
     def train(self, dataset):
         """
@@ -49,8 +51,8 @@ class MultiLayerPerceptronModel(NetworkModel):
             # Calculate accuracy
             accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
 
-            x_test, y_test = dataset.next_batch(dataset.number_of_examples_test,
-                                                "test")
+            x_test, y_test = dataset.next_batch(
+                dataset.number_of_examples_test(), "test")
             print("Accuracy:", accuracy.eval({self._x: x_test,
                                               self._y: y_test}))
 
@@ -67,7 +69,15 @@ class MultiLayerPerceptronModel(NetworkModel):
     def predict(self, query):
         if not self.model:
             self._build()
+
+        # Query : {"x": [[x1, ..., x784]]}
+        if query == {}:
+            return None
+
+        # self._process_dataset(query) TODO Convert a given file (image) to a proper vector
+
         result = None
+        result2 = None
         # Running a new session
         print("Starting 2nd session...")
         with tf.Session() as sess:
@@ -82,11 +92,12 @@ class MultiLayerPerceptronModel(NetworkModel):
             # _p = sess.run([self.model], feed_dict={x: np.array(query['x']),
             #                                        y: np.array(query['y'])})
             _p = tf.argmax(self.model, 1)
-            result = _p.eval({self._x: np.array(query['x']),
-                              self._y: np.array(query['y'])})
-            print("Result:", result)
+            result = _p.eval({self._x: np.array(query['x'])})
+            result2 = self.model.eval({self._x: np.array(query['x'])})
 
-        return result
+        return {"max_index": result.tolist() ,
+                "prediction": result2.tolist(),
+                "message": "This is the index of the label"}
 
     def _load(self):
         return
@@ -98,23 +109,36 @@ class MultiLayerPerceptronModel(NetworkModel):
         """
         Constructs the model
         """
+
+        save_dir = '/'.join(self.config.model_path.split('/')[:-1])
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+
         # Input
-        self._x = tf.placeholder(tf.float32, [None, self.config.n_input])
-        self._y = tf.placeholder(tf.float32, [None, self.config.n_classes])
+        self._x = tf.placeholder(tf.float32, [None, self.config.n_inputs],
+                                 name="x")
+        self._y = tf.placeholder(tf.float32, [None, self.config.n_classes],
+                                 name="y")
 
         # Store layers weight & bias
         weights = {
-            'h1': tf.Variable(tf.random_normal([self.config.n_input,
-                                                self.config.hidden1_dim])),
+            'h1': tf.Variable(tf.random_normal([self.config.n_inputs,
+                                                self.config.hidden1_dim]),
+                              name="wh1"),
             'h2': tf.Variable(tf.random_normal([self.config.hidden1_dim,
-                                                self.config.hidden2_dim])),
+                                                self.config.hidden2_dim]),
+                              name="wh2"),
             'out': tf.Variable(tf.random_normal([self.config.hidden2_dim,
-                                                 self.config.n_classes]))
+                                                 self.config.n_classes]),
+                               name="wout")
         }
         biases = {
-            'b1': tf.Variable(tf.random_normal([self.config.hidden1_dim])),
-            'b2': tf.Variable(tf.random_normal([self.config.hidden2_dim])),
-            'out': tf.Variable(tf.random_normal([self.config.n_classes]))
+            'b1': tf.Variable(tf.random_normal([self.config.hidden1_dim]),
+                              name="b1"),
+            'b2': tf.Variable(tf.random_normal([self.config.hidden2_dim]),
+                              name="b2"),
+            'out': tf.Variable(tf.random_normal([self.config.n_classes]),
+                               name="bout")
         }
         # Hidden layer with RELU activation
         layer_1 = tf.add(tf.matmul(self._x, weights['h1']), biases['b1'])

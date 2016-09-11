@@ -119,3 +119,16 @@ class CalendarDBClient():
 
     def exists(self, user_id, event_type, from_date, to_date):
         pass
+
+    def list_all_training_events(self):
+        try:
+            request = requests.get(
+                self.CALENDAR_URL + 'allevents/events/')
+
+            if request.status_code == 500:
+                return []
+
+            return request.json()
+        except requests.exceptions.RequestException as e:
+            pass
+        return []

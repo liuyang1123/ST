@@ -11,9 +11,6 @@ from api.utils import decode_token, get_token
 from api.event_module.calendar_client import CalendarDBClient
 from api.learning_module.hard_constraints.preferences.manager import UserPreferencesManager
 
-from api.learning_module.soft_constraints.data_utils import *
-from api.learning_module.soft_constraints.bayesian_network import BayesianNetworkModel
-
 
 class ScheduleViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
@@ -120,46 +117,46 @@ class InvitationViewSet(viewsets.ViewSet):
                         status=status.HTTP_200_OK)
 
 
-class BNTrainingView(viewsets.ViewSet):
-    permission_classes = (IsAuthenticated,)
-    renderer_classes = (JSONRenderer, )
-
-    def create(self, request):
-        """
-        Triggers the learning mechanism.
-        """
-        decoded_token = decode_token(request.META)
-        user_id = decoded_token['user_id']
-
-        # TODO Do this as a Celery task
-        datasets_bn = read_data_sets(user_id, False)
-        bn = BayesianNetworkModel(user_id)
-        bn.build_model()
-        data, labels = datasets_bn.train.next_batch()
-        bn.train(data, labels)
-        bn.save()
-        bn.close()
-        return Response({"message": "Training started."},
-                        status=status.HTTP_200_OK)
-
-    @list_route(methods=['post'])
-    def infer(self, request):
-        """
-        Triggers the learning mechanism.
-        """
-        decoded_token = decode_token(request.META)
-        user_id = decoded_token['user_id']
-
-        bn = BayesianNetworkModel(user_id)
-        obs = {}
-        try:
-            obs = json.loads(request.data['observation'])
-        except:
-            pass
-        result = bn.predict(obs)
-        bn.close()
-
-        return Response(json.dumps(result), status=status.HTTP_200_OK)
+# class BNTrainingView(viewsets.ViewSet):
+#     permission_classes = (IsAuthenticated,)
+#     renderer_classes = (JSONRenderer, )
+#
+#     def create(self, request):
+#         """
+#         Triggers the learning mechanism.
+#         """
+#         decoded_token = decode_token(request.META)
+#         user_id = decoded_token['user_id']
+#
+#         # TODO Do this as a Celery task
+#         datasets_bn = read_data_sets(user_id, False)
+#         bn = BayesianNetworkModel(user_id)
+#         bn.build_model()
+#         data, labels = datasets_bn.train.next_batch()
+#         bn.train(data, labels)
+#         bn.save()
+#         bn.close()
+#         return Response({"message": "Training started."},
+#                         status=status.HTTP_200_OK)
+#
+#     @list_route(methods=['post'])
+#     def infer(self, request):
+#         """
+#         Triggers the learning mechanism.
+#         """
+#         decoded_token = decode_token(request.META)
+#         user_id = decoded_token['user_id']
+#
+#         bn = BayesianNetworkModel(user_id)
+#         obs = {}
+#         try:
+#             obs = json.loads(request.data['observation'])
+#         except:
+#             pass
+#         result = bn.predict(obs)
+#         bn.close()
+#
+#         return Response(json.dumps(result), status=status.HTTP_200_OK)
 
 
 class PreferenceViewSet(viewsets.ViewSet):
@@ -276,52 +273,52 @@ class PreferenceViewSet(viewsets.ViewSet):
                         status=status.HTTP_201_CREATED)
 
 
-class DynamicPreferenceView(viewsets.ViewSet):
-    permission_classes = (IsAuthenticated,)
-    renderer_classes = (JSONRenderer, )
-
-    @list_route(methods=['post'])
-    def train(self, request):
-        decoded_token = decode_token(request.META)
-        user_id = decoded_token['user_id']
-
-        method = request.data.get('method', 'bn')
-
-        if method == 'bn':
-            # TODO Do this as a Celery task
-            datasets_bn = read_data_sets(user_id, False)
-            bn = BayesianNetworkModel(user_id)
-            bn.build_model()
-            data, labels = datasets_bn.train.next_batch()
-            bn.train(data, labels)
-            bn.save()
-            bn.close()
-
-        return Response({"message": "Training started."},
-                        status=status.HTTP_200_OK)
-
-    @list_route(methods=['post'])
-    def infer(self, request):
-        """
-        Triggers the learning mechanism.
-        """
-        decoded_token = decode_token(request.META)
-        user_id = decoded_token['user_id']
-
-        method = request.data.get('method', 'bn')
-        result = {}
-
-        if method == 'bn':
-            bn = BayesianNetworkModel(user_id)
-            obs = json.loads(request.data.get('observation', '{}'))
-            r = bn.predict(obs)
-            # print(r)
-            result["result"] = json.loads(
-                r["participant"]).get("parameters")[0]['true']
-            result["data"] = r
-            bn.close()
-
-        return Response(result, status=status.HTTP_200_OK)
+# class DynamicPreferenceView(viewsets.ViewSet):
+#     permission_classes = (IsAuthenticated,)
+#     renderer_classes = (JSONRenderer, )
+#
+#     @list_route(methods=['post'])
+#     def train(self, request):
+#         decoded_token = decode_token(request.META)
+#         user_id = decoded_token['user_id']
+#
+#         method = request.data.get('method', 'bn')
+#
+#         if method == 'bn':
+#             # TODO Do this as a Celery task
+#             datasets_bn = read_data_sets(user_id, False)
+#             bn = BayesianNetworkModel(user_id)
+#             bn.build_model()
+#             data, labels = datasets_bn.train.next_batch()
+#             bn.train(data, labels)
+#             bn.save()
+#             bn.close()
+#
+#         return Response({"message": "Training started."},
+#                         status=status.HTTP_200_OK)
+#
+#     @list_route(methods=['post'])
+#     def infer(self, request):
+#         """
+#         Triggers the learning mechanism.
+#         """
+#         decoded_token = decode_token(request.META)
+#         user_id = decoded_token['user_id']
+#
+#         method = request.data.get('method', 'bn')
+#         result = {}
+#
+#         if method == 'bn':
+#             bn = BayesianNetworkModel(user_id)
+#             obs = json.loads(request.data.get('observation', '{}'))
+#             r = bn.predict(obs)
+#             # print(r)
+#             result["result"] = json.loads(
+#                 r["participant"]).get("parameters")[0]['true']
+#             result["data"] = r
+#             bn.close()
+#
+#         return Response(result, status=status.HTTP_200_OK)
 
 from api.learning_module.ml.apiendpoint import MLViewSet
 
@@ -329,10 +326,10 @@ from api.learning_module.ml.apiendpoint import MLViewSet
 router = routers.DefaultRouter()
 router.register(r'scheduling', ScheduleViewSet, base_name='scheduling')
 router.register(r'invitation', InvitationViewSet, base_name='invitation')
-router.register(r'bayesiannetwork', BNTrainingView,
-                base_name='bayesiannetwork')
+# router.register(r'bayesiannetwork', BNTrainingView,
+#                 base_name='bayesiannetwork')
 router.register(r'preferences', PreferenceViewSet, base_name='preferences')
-router.register(r'dpreferences', DynamicPreferenceView,
-                base_name='dpreferences')
+# router.register(r'dpreferences', DynamicPreferenceView,
+#                 base_name='dpreferences')
 router.register(r'MLViewSet/(?P<model>\S+)', MLViewSet,
                 base_name='MLViewSet')

@@ -55,6 +55,16 @@ msweb:
   links:
     - mspostgres
     - rethinkdb
+devmsweb:
+  restart: always
+  build: ./msservice
+  volumes:
+    - .:/code
+  ports:
+    - "8888:8888"
+  links:
+    - mspostgres
+    - rethinkdb
 
 #    - rabbitmq:rabbit
 #    - redis:redis

@@ -1,2 +1,0 @@
-class dataset(object):
-    pass

@@ -2,6 +2,7 @@ import numpy as np
 import os
 import urllib
 from abc import ABCMeta, abstractmethod
+from shutil import rmtree
 
 KNOWN_DATASETS = {
     "mnist": {
@@ -17,29 +18,52 @@ KNOWN_DATASETS = {
         "one_hot": True,
         "validation_size": 5000
     },
-    "movielens-100k": {
+    "movielens100k": {
         "url": 'http://files.grouplens.org/datasets/movielens/',
-        "name": "movielens",
+        "name": "movielens100k",
         "workdir": "./datasets/movielens/",
         "filenames": {
             "100k": "ml-100k.zip"
         },
         "one_hot": True,
         "validation_size": 5000
-    }
+    },
+    "events": {
+        "url": None,
+        "name": "events",
+        "workdir": None,
+        "filenames": {},
+        "one_hot": False,
+        "validation_size": 50
+    },
+    "babi": {
+        "url": 'http://www.thespermwhale.com/jaseweston/babi/',
+        "name": "babi",
+        "workdir": "./datasets/dmn/data/",
+        "filenames": {
+            "tasks": "tasks_1-20_v1-2.tar.gz"
+        },
+        "training_task": "1",
+        "testing_task": "1",
+        "use_10k": False,
+        "input_mask_mode": 'sentence',
+        "word_vector_length": 50
+    },
 }
 
 
 class Dataset:
     __metaclass__ = ABCMeta
 
-    def __init__(self, config=None):
+    def __init__(self, config={}):
+        self.config = config
         self.url = config.get("url", None)
         self.name = config.get("name", None)
         self.workdir = config.get("workdir", None)
         self.filenames = config.get("filenames", None)
         self.one_hot = config.get("one_hot", False)
         self.validation_size = config.get("validation_size", 1000)
+        self.restart = config.get("restart", False)
 
         self._num_examples_train = 0
         self._num_examples_test = 0
@@ -69,6 +93,9 @@ class Dataset:
         if self.filenames is None:
             return
 
+        if self.restart:
+            rmtree(self.workdir)
+
         if not os.path.exists(self.workdir):
             os.makedirs(self.workdir)
 
@@ -76,6 +103,7 @@ class Dataset:
 
         for filename in self.filenames.values():
             filepath = os.path.join(self.workdir, filename)
+
             if not os.path.exists(filepath):
                 filepath, _ = urllib.urlretrieve(self.url + filename, filepath)
                 filepaths.append(filepath)

@@ -295,7 +295,7 @@ class QViewSet(viewsets.ViewSet):
 
         event = Event()
         serializer = EventSerializer(
-            event.list_all_events_for_training(int(user_id)), many=True)
+            event.list_all_events_for_training_user(int(user_id)), many=True)
         event.close()
 
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -401,6 +401,18 @@ class QEventViewSet(viewsets.ViewSet):
 
         return Response(serializer.errors)
 
+class AllEvents(viewsets.ViewSet):
+    permission_classes = (AllowAny,)
+    renderer_classes = (JSONRenderer, )
+
+    @list_route(methods=['get'])
+    def events(self, request):
+        event = Event()
+        serializer = EventSerializer(
+            event.list_all_events_for_training(), many=True)
+        event.close()
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 # Routers provide an easy way of automatically determining the URL conf.
 router = routers.DefaultRouter()
@@ -417,3 +429,7 @@ router.register(
     r'myevents',
     QEventViewSet,
     base_name='qevents')
+router.register(
+    r'allevents',
+    AllEvents,
+    base_name='allevents')

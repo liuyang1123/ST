@@ -1,59 +1,18 @@
-FROM ubuntu:14.04
+FROM gcr.io/tensorflow/tensorflow
 
 # Pick up some TF dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        build-essential \
-        curl \
-        libfreetype6-dev \
-        libpng12-dev \
-        libzmq3-dev \
-        pkg-config \
-        python \
-        python-dev \
-        python-numpy \
-        python-pip \
-        python-scipy \
-        rsync \
-        unzip \
+        libpq-dev \
         && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update && apt-get install -y libpq-dev python-dev
-
-RUN curl -O https://bootstrap.pypa.io/get-pip.py && \
-    python get-pip.py && \
-    rm get-pip.py
-
-RUN pip --no-cache-dir install \
-        ipykernel \
-        jupyter \
-        matplotlib
-
-ENV TENSORFLOW_VERSION 0.10.0rc0
-
-# --- DO NOT EDIT OR DELETE BETWEEN THE LINES --- #
-# These lines will be edited automatically by parameterized_docker_build.sh. #
-# COPY _PIP_FILE_ /
-# RUN pip --no-cache-dir install /_PIP_FILE_
-# RUN rm -f /_PIP_FILE_
-
-# Install TensorFlow CPU version from central repo
-RUN pip --no-cache-dir install \
-    http://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-${TENSORFLOW_VERSION}-cp27-none-linux_x86_64.whl
-# --- ~ DO NOT EDIT OR DELETE BETWEEN THE LINES --- #
-
-# TensorBoard
-EXPOSE 6006
-
 RUN mkdir /code
 WORKDIR /code
+
+ADD . /code/
 
 ADD requirements.txt /code/
 RUN pip install -r requirements.txt
 # RUN pip install pomegranate --no-cache-dir
 RUN pip install https://github.com/gnzlo789/pomegranate/archive/master.zip
-
-ADD . /code/
-
-RUN adduser --disabled-password --gecos '' myuser
